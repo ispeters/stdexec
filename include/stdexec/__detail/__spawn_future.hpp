@@ -18,14 +18,18 @@
 
 #include "__execution_fwd.hpp"
 
+#include "../stop_token.hpp"
+#include "__atomic.hpp"
+#include "__basic_sender.hpp"
 #include "__concepts.hpp"
-#include "__env.hpp"
-#include "__queries.hpp"
 #include "__receivers.hpp"
 #include "__scope_concepts.hpp"
-#include "__senders_core.hpp"
+#include "__senders.hpp"
+#include "__spawn_common.hpp"
+#include "__tuple.hpp"
 #include "__type_traits.hpp"
-#include "__write_env.hpp"
+#include "__variant.hpp"
+#include "__transform_completion_signatures.hpp"
 
 #include <memory>
 #include <type_traits>
@@ -216,9 +220,9 @@ namespace stdexec {
         // arrived before or after the consumer. In the case we finish first, we need to store-release
         // so the consumer can see what we've written; in the case we finish second, we need to
         // load-acquire so we can see what the consumer has written.
-        void* sentinel = __registeredReceiver_.exchange(this, std::memory_order_acq_rel);
+        void* sentinel = __registeredReceiver_.exchange(this, __std::memory_order_acq_rel);
 
-        if (sentinel == nullptr) {
+        if (sentinel == nullptr) { // NOLINT(bugprone-branch-clone)
           // The producer side has completed first and we've updated __registeredReceiver_ with
           // (this) to mark things as such; the consumer side is responsible for all further
           // actions.
@@ -276,8 +280,8 @@ namespace stdexec {
               // on failure in case we're about to observe that the producer has already finished
               // so we can see the result it produced. The success order must be stronger than the
               // failure order so success has to be acquire-release.
-              std::memory_order_acq_rel,
-              std::memory_order_acquire)) {
+              __std::memory_order_acq_rel,
+              __std::memory_order_acquire)) {
           // Since our CAS succeeded, we can conclude that we observed a null __registeredReceiver_
           // and successfully updated it to point to the receiver. That means the consumer has
           // successfully registered a receiver and it's up to the producer to complete it when the
@@ -294,7 +298,7 @@ namespace stdexec {
           // We need a load-acquire if we happen to need to observe the producer's result; we don't
           // need a store-release, though, because the producer's output will be ignored if we
           // manage to abandon the operation before it completes.
-          sentinel = __registeredReceiver_.exchange(this, std::memory_order_acquire);
+          sentinel = __registeredReceiver_.exchange(this, __std::memory_order_acquire);
         }
 
         if (sentinel == this) {
@@ -333,8 +337,8 @@ namespace stdexec {
             // run. We need to load-acquire on failure, though, to make sure we can safely read
             // __callback_ in the event that __consume ran on a different thread. Since it's UB for
             // the failure memory order to be stronger than the success order, both must be acquire.
-            std::memory_order_acquire,
-            std::memory_order_acquire)) {
+            __std::memory_order_acquire,
+            __std::memory_order_acquire)) {
           // We succeeded, meaning that __registeredReceiver_ was nullptr on entry, which signals
           // that __try_cancel ran before either of __consume or __complete. Leaving (this + 1)
           // as the sentinel will allow the two forthcoming functions to negotiate how to
@@ -374,7 +378,7 @@ namespace stdexec {
         // In the second case, our attempt to abandon the operation is futile because the producer
         // has already finished and is busy completing the receiver; our effort may as well not have
         // happened and need not synchronize with anything.
-        sentinel = __registeredReceiver_.exchange(this, std::memory_order_relaxed);
+        sentinel = __registeredReceiver_.exchange(this, __std::memory_order_relaxed);
 
         if (sentinel == receiver) {
           // __registeredReceiver_ still contained the value we observed during the CAS, which means
@@ -405,8 +409,8 @@ namespace stdexec {
               // the complete write to __result_ before we invoke __destroy, but, in the case we're
               // first, we're going to act as if the producer never existed so there's no need to
               // synchronize at all.
-              std::memory_order_acquire,
-              std::memory_order_relaxed)) {
+              __std::memory_order_acquire,
+              __std::memory_order_relaxed)) {
           // The producer hadn't finished by the time we marked the consumer as done so we've handed
           // over clean-up responsibility and have nothing else to do.
           return;
@@ -432,7 +436,7 @@ namespace stdexec {
       //      marked the operation so that __complete and __consume can negotiate how to complete
       //   4. any other value means __consume has "registered" its receiver to be completed
       //      by __complete when it is invoked
-      std::atomic<void*> __registeredReceiver_{nullptr};
+      __std::atomic<void*> __registeredReceiver_{nullptr};
       // Type-erased completion callback.
       //
       // The void* will receive the address of the receiver, which will need to have its
@@ -467,7 +471,7 @@ namespace stdexec {
                 [&__rcvr](auto cpo, auto&&... __vals) {
                   cpo(std::move(__rcvr), std::move(__vals)...);
                 },
-                std::move(__tuple));
+                std::move(__tuple)); // NOLINT(bugprone-move-forwarding-reference)
             }
           },
           std::move(this->__result_));
