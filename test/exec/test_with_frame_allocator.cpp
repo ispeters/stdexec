@@ -38,4 +38,9 @@ namespace
                | ex::then([](auto alloc) noexcept { REQUIRE(sizeof(alloc) > 0); });
         }}));
   }
+
+  TEST_CASE("with_frame_allocator forwards environment queries", "[adaptors][with_frame_allocator]")
+  {
+    ex::sync_wait(exec::with_frame_allocator(ex::read_env(ex::get_scheduler)));
+  }
 }  // namespace

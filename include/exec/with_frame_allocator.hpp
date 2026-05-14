@@ -288,11 +288,19 @@ do_delete:
         return __opstate<_Receiver>{static_cast<_Receiver&&>(__rcvr)};
       };
 
-      template <class _Self, class... _Env>
+      template <class _Self>
+        requires(!dependent_sender<__child_of<_Self>>)
       static consteval auto __get_completion_signatures()
       {
         static_assert(__sender_for<_Self, with_frame_allocator_t>);
-        return STDEXEC::get_completion_signatures<__child_of<_Self>, __make_env_t<_Env...>>();
+        return STDEXEC::get_completion_signatures<__child_of<_Self>>();
+      }
+
+      template <class _Self, class _Env>
+      static consteval auto __get_completion_signatures()
+      {
+        static_assert(__sender_for<_Self, with_frame_allocator_t>);
+        return STDEXEC::get_completion_signatures<__child_of<_Self>, __make_env_t<_Env>>();
       }
     };
   }  // namespace __with_frame_alloc
