@@ -86,8 +86,9 @@ namespace experimental::execution
         std::size_t __size = __smallest_allocation;
         for (auto& __stack: __free_stacks_)
         {
-          for (void* __allocation: __stack)
+          while (!__stack.empty())
           {
+            void* __allocation = __stack.pop();
             ::operator delete(__allocation, __size);
           }
 
