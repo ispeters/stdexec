@@ -128,6 +128,7 @@ namespace experimental::execution
           STDEXEC_TRY
           {
             __free_stacks_[__stack_index].push(__p);
+            return;
           }
           STDEXEC_CATCH(...)
           {
