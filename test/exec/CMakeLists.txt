@@ -64,6 +64,7 @@ set(exec_test_sources
     test_function.cpp
     test_frame_allocator.cpp
     test_memory_resource_adaptor.cpp
+    test_with_frame_allocator.cpp
     )
 
 set_source_files_properties(test_any_sender.cpp
