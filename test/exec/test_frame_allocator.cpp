@@ -37,7 +37,7 @@ namespace
       std::pmr::memory_resource*         rsc = std::pmr::new_delete_resource();
       __frame_allocator_t<decltype(rsc)> fa(rsc);
 
-      STATIC_REQUIRE(std::same_as<decltype(fa), std::pmr::polymorphic_allocator<std::byte>>);
+      STATIC_REQUIRE(std::same_as<decltype(fa), std::pmr::polymorphic_allocator<>>);
     }
 
     SECTION("with a specific resource")
@@ -45,7 +45,7 @@ namespace
       std::pmr::unsynchronized_pool_resource rsc;
       __frame_allocator_t<decltype(rsc)*>    fa(&rsc);
 
-      STATIC_REQUIRE(!std::same_as<decltype(fa), std::pmr::polymorphic_allocator<std::byte>>);
+      STATIC_REQUIRE(!std::same_as<decltype(fa), std::pmr::polymorphic_allocator<>>);
     }
 
     SECTION("with an allocator")

@@ -39,9 +39,8 @@ namespace experimental::execution
     {
       static_assert(STDEXEC::__nothrow_callable<get_frame_allocator_t, Env const &>);
       using __alloc_t = STDEXEC::__call_result_t<get_frame_allocator_t, Env const &>;
-      static_assert(
-        STDEXEC::__std::constructible_from<std::pmr::polymorphic_allocator<std::byte>, __alloc_t>
-        || STDEXEC::__simple_allocator<STDEXEC::__decay_t<__alloc_t>>);
+      static_assert(STDEXEC::__std::constructible_from<std::pmr::polymorphic_allocator<>, __alloc_t>
+                    || STDEXEC::__simple_allocator<STDEXEC::__decay_t<__alloc_t>>);
     }
 
     static consteval auto query(STDEXEC::forwarding_query_t) noexcept -> bool

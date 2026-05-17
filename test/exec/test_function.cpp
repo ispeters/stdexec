@@ -145,12 +145,10 @@ namespace
         return ex::read_env(exec::get_frame_allocator)
              | ex::then(
                  [](auto alloc) noexcept
-                 {
-                   return std::same_as<std::pmr::polymorphic_allocator<std::byte>, decltype(alloc)>;
-                 });
+                 { return std::same_as<std::pmr::polymorphic_allocator<>, decltype(alloc)>; });
       });
 
-    std::pmr::polymorphic_allocator<std::byte> alloc;
+    std::pmr::polymorphic_allocator<> alloc;
 
     auto [ret] = ex::sync_wait(std::move(sndr)
                                | ex::write_env(ex::prop(exec::get_frame_allocator, alloc)))

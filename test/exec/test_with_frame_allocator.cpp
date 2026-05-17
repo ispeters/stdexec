@@ -28,15 +28,12 @@ namespace
 {
   TEST_CASE("with_frame_allocator builds", "[adaptors][with_frame_allocator]")
   {
-    ex::sync_wait(exec::with_frame_allocator(
-      exec::function<void() noexcept,
-                     exec::queries<std::pmr::polymorphic_allocator<std::byte>(
-                       exec::get_frame_allocator_t) noexcept>>{
-        []() noexcept
-        {
-          return ex::read_env(exec::get_frame_allocator)
-               | ex::then([](auto alloc) noexcept { REQUIRE(sizeof(alloc) > 0); });
-        }}));
+    ex::sync_wait(exec::with_frame_allocator(exec::function<void() noexcept>{
+      []() noexcept
+      {
+        return ex::read_env(exec::get_frame_allocator)
+             | ex::then([](auto alloc) noexcept { REQUIRE(sizeof(alloc) > 0); });
+      }}));
   }
 
   TEST_CASE("with_frame_allocator forwards environment queries", "[adaptors][with_frame_allocator]")

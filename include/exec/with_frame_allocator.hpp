@@ -320,9 +320,9 @@ namespace experimental::execution
         : __resource_(std::addressof(__rsrc))
       {}
 
-      operator std::pmr::polymorphic_allocator<std::byte>() const noexcept
+      operator std::pmr::polymorphic_allocator<>() const noexcept
       {
-        return std::pmr::polymorphic_allocator<std::byte>(__resource_);
+        return std::pmr::polymorphic_allocator<>(__resource_);
       }
 
      protected:
