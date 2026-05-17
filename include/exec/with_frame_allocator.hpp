@@ -162,24 +162,24 @@ namespace experimental::execution
     };
 
     template <__allocation_cache _Cache = __linked_stack_cache<true>>
-    struct __chunked_resource : std::pmr::memory_resource
+    struct __chunked_caching_resource : std::pmr::memory_resource
     {
-      constexpr __chunked_resource() noexcept = default;
+      constexpr __chunked_caching_resource() noexcept = default;
 
-      STDEXEC_IMMOVABLE(__chunked_resource);
+      STDEXEC_IMMOVABLE(__chunked_caching_resource);
 
-      constexpr ~__chunked_resource()
+      constexpr ~__chunked_caching_resource()
       {
-        std::size_t __size = __smallest_chunk;
+        std::size_t __size = __smallest_allocation;
         // capture __size by reference because we're going to change it
         auto __deleter = [&__size](void* __p) noexcept
         {
           __deallocate(__p, __size, __uniform_alignment);
         };
 
-        for (auto& __chunk: __chunks_)
+        for (auto& __cache: __caches_)
         {
-          __chunk.deallocate_all(__deleter);
+          __cache.deallocate_all(__deleter);
           __size <<= 1;
         }
       }
@@ -190,14 +190,14 @@ namespace experimental::execution
       constexpr auto allocate(std::size_t __bytes, std::size_t __align = __uniform_alignment)  //
         -> void*
       {
-        auto __chunk_index = __chunk_index_of(__bytes);
+        auto __cache_index = __cache_index_of(__bytes);
 
         // check if the request is suitably sized and aligned that we might be able to
-        // serve it from our cache
-        if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
+        // serve it from one of our caches
+        if (__cache_index < __cache_count && __align <= __uniform_alignment)
         {
           // try_get is expected to return nullptr if the cache is empty
-          if (void* __allocation = __chunks_[__chunk_index].try_get())
+          if (void* __allocation = __caches_[__cache_index].try_get())
           {
             // cache hit, yay!
             return __allocation;
@@ -220,12 +220,12 @@ namespace experimental::execution
       constexpr void
       deallocate(void* __p, std::size_t __bytes, std::size_t __align = __uniform_alignment) noexcept
       {
-        auto __chunk_index = __chunk_index_of(__bytes);
+        auto __cache_index = __cache_index_of(__bytes);
 
-        if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
+        if (__cache_index < __cache_count && __align <= __uniform_alignment)
         {
           // this allocation is suitably sized and aligned to be cached
-          __chunks_[__chunk_index].put(__p);
+          __caches_[__cache_index].put(__p);
         }
         else
         {
@@ -276,34 +276,35 @@ namespace experimental::execution
       //! signatures as the corresponding member functions on memory_resource
       static constexpr std::size_t __uniform_alignment = alignof(std::max_align_t);
 
-      //! the number of bytes in the smallest cached allocation
-      static constexpr std::size_t __smallest_chunk = 64;
-      //! the number of allocation sizes before falling back to ::new
-      static constexpr std::size_t __chunk_count = 10;
+      //! the number of bytes in the smallest cached allocation; must be a power of 2
+      static constexpr std::size_t __smallest_allocation = 64;
+      //! the number of allocation sizes before falling back to ::operator new
+      static constexpr std::size_t __cache_count = 10;
 
       //! given a request for an allocation of size __bytes, how many bytes should we
       //! actually allocate?
       static constexpr std::size_t __allocation_size_of(std::size_t __bytes) noexcept
       {
         // round __bytes up to the nearest power of two that is at least
-        // __smallest_chunk
-        return std::bit_ceil(__bytes | __smallest_chunk);
+        // __smallest_allocation
+        return std::bit_ceil(__bytes | __smallest_allocation);
       }
 
-      //! given a request for an allocation of size __bytes, which chunk should be
+      //! given a request for an allocation of size __bytes, which cache should be
       //! responsible for caching the allocation?
-      static constexpr std::size_t __chunk_index_of(std::size_t __bytes) noexcept
+      static constexpr std::size_t __cache_index_of(std::size_t __bytes) noexcept
       {
-        // compute the index into __chunks_ containing the cached allocations for
+        // compute the index into __caches_ containing the cached allocations for
         // allocations of size __bytes; returns an index larger than the largest valid
         // index for values of __bytes whose allocations will not be cached
-        return std::countr_zero(__allocation_size_of(__bytes)) - std::countr_zero(__smallest_chunk);
+        return std::countr_zero(__allocation_size_of(__bytes))
+             - std::countr_zero(__smallest_allocation);
       }
 
-      //! the allocation cache
-      //! each entry in the array cache allocations twice as big as the one prior, with
-      //! the first entry caching allocations of size __smallest_chunk
-      std::array<_Cache, __chunk_count> __chunks_{};
+      //! the chunked caches
+      //! each entry in the array caches allocations twice as big as the one prior, with
+      //! the first entry caching allocations of size __smallest_allocation
+      std::array<_Cache, __cache_count> __caches_{};
     };
 
     template <class _Resource>
@@ -344,7 +345,7 @@ namespace experimental::execution
       }
     };
 
-    template <class _Ty, __memory_resource _Resource = __chunked_resource<>>
+    template <class _Ty, __memory_resource _Resource = __chunked_caching_resource<>>
     struct __frame_allocator : __frame_allocator_base<_Resource>
     {
       using value_type = _Ty;
@@ -366,8 +367,8 @@ namespace experimental::execution
     template <class _Receiver>
     struct __opstate
     {
-      _Receiver                    __rcvr_;
-      mutable __chunked_resource<> __resource_;
+      _Receiver                            __rcvr_;
+      mutable __chunked_caching_resource<> __resource_;
     };
 
     struct with_frame_allocator_t : sender_adaptor_closure<with_frame_allocator_t>
