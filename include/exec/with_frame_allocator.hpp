@@ -195,9 +195,9 @@ namespace experimental::execution
     };
 
     template <__memory_resource _Resource>
-    struct __resource
+    struct __frame_allocator_base
     {
-      constexpr explicit __resource(_Resource& __rsrc) noexcept
+      constexpr explicit __frame_allocator_base(_Resource& __rsrc) noexcept
         : __resource_(std::addressof(__rsrc))
       {}
 
@@ -220,19 +220,19 @@ namespace experimental::execution
      private:
       _Resource* __resource_;
 
-      friend bool operator==(__resource __lhs, __resource __rhs) noexcept
+      friend bool operator==(__frame_allocator_base __lhs, __frame_allocator_base __rhs) noexcept
       {
         return *__lhs.__resource_ == *__rhs.__resource_;
       }
     };
 
     template <class _Ty, __memory_resource _Resource = __chunked_resource<>>
-    struct __frame_allocator : __resource<_Resource>
+    struct __frame_allocator : __frame_allocator_base<_Resource>
     {
       using value_type = _Ty;
       using pointer    = value_type*;
 
-      using __resource<_Resource>::__resource;
+      using __frame_allocator_base<_Resource>::__frame_allocator_base;
 
       constexpr pointer allocate(std::size_t __n)
       {
@@ -289,7 +289,7 @@ namespace experimental::execution
       };
 
       static constexpr auto __get_state =
-        []<class _Sender, class _Receiver>(_Sender&& __sndr,
+        []<class _Sender, class _Receiver>(_Sender const &,
                                            _Receiver __rcvr) -> __opstate<_Receiver>
         requires sender_in<__child_of<_Sender>, __make_env_t<__fwd_env_t<env_of_t<_Receiver>>>>
       {
