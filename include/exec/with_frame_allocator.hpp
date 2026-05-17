@@ -307,14 +307,15 @@ namespace experimental::execution
       std::array<_Cache, __cache_count> __caches_{};
     };
 
-    template <class _Receiver>
+    template <class _Receiver, class _Resource>
     struct __opstate
     {
-      _Receiver                            __rcvr_;
-      mutable __chunked_caching_resource<> __resource_;
+      _Receiver         __rcvr_;
+      mutable _Resource __resource_;
     };
 
-    struct with_frame_allocator_t : sender_adaptor_closure<with_frame_allocator_t>
+    template <class _Resource>
+    struct with_frame_allocator_t : sender_adaptor_closure<with_frame_allocator_t<_Resource>>
     {
       [[nodiscard]]
       constexpr auto operator()() const noexcept
@@ -325,14 +326,14 @@ namespace experimental::execution
       template <sender _Sender>
       constexpr __well_formed_sender auto operator()(_Sender&& __sndr) const
       {
-        return __make_sexpr<with_frame_allocator_t>({}, static_cast<_Sender&&>(__sndr));
+        return __make_sexpr<with_frame_allocator_t<_Resource>>({}, static_cast<_Sender&&>(__sndr));
       }
     };
 
-    template <class... _Env>
-    using __make_env_t =
-      __join_env_t<prop<get_frame_allocator_t, __chunked_caching_resource<>*>, _Env...>;
+    template <class _Resource, class... _Env>
+    using __make_env_t = __join_env_t<prop<get_frame_allocator_t, _Resource*>, _Env...>;
 
+    template <class _Resource>
     struct __impls : __sexpr_defaults
     {
       static constexpr auto __get_attrs =
@@ -342,8 +343,8 @@ namespace experimental::execution
       };
 
       static constexpr auto __get_env =
-        []<class _Receiver>(__ignore, __opstate<_Receiver> const & __state) noexcept
-        -> __make_env_t<__fwd_env_t<env_of_t<_Receiver>>>
+        []<class _Receiver>(__ignore, __opstate<_Receiver, _Resource> const & __state) noexcept
+        -> __make_env_t<_Resource, __fwd_env_t<env_of_t<_Receiver>>>
       {
         return __env::__join(prop(get_frame_allocator, std::addressof(__state.__resource_)),
                              __fwd_env(STDEXEC::get_env(__state.__rcvr_)));
@@ -351,39 +352,49 @@ namespace experimental::execution
 
       static constexpr auto __get_state =
         []<class _Sender, class _Receiver>(_Sender const &,
-                                           _Receiver __rcvr) -> __opstate<_Receiver>
-        requires sender_in<__child_of<_Sender>, __make_env_t<__fwd_env_t<env_of_t<_Receiver>>>>
+                                           _Receiver __rcvr) -> __opstate<_Receiver, _Resource>
+        requires sender_in<__child_of<_Sender>,
+                           __make_env_t<_Resource, __fwd_env_t<env_of_t<_Receiver>>>>
       {
-        return __opstate<_Receiver>{static_cast<_Receiver&&>(__rcvr)};
+        return __opstate<_Receiver, _Resource>{static_cast<_Receiver&&>(__rcvr)};
       };
 
       template <class _Self>
         requires(!dependent_sender<__child_of<_Self>>)
       static consteval auto __get_completion_signatures()
       {
-        static_assert(__sender_for<_Self, with_frame_allocator_t>);
+        static_assert(__sender_for<_Self, with_frame_allocator_t<_Resource>>);
         return STDEXEC::get_completion_signatures<__child_of<_Self>>();
       }
 
       template <class _Self, class _Env>
       static consteval auto __get_completion_signatures()
       {
-        static_assert(__sender_for<_Self, with_frame_allocator_t>);
+        static_assert(__sender_for<_Self, with_frame_allocator_t<_Resource>>);
         return STDEXEC::get_completion_signatures<__child_of<_Self>,
-                                                  __make_env_t<__fwd_env_t<_Env>>>();
+                                                  __make_env_t<_Resource, __fwd_env_t<_Env>>>();
       }
     };
+
+    template <bool _Synchronized>
+    using __default_resource = __chunked_caching_resource<__linked_stack_cache<_Synchronized>>;
   }  // namespace __with_frame_alloc
 
-  using __with_frame_alloc::with_frame_allocator_t;
+  using with_frame_allocator_t =
+    __with_frame_alloc::with_frame_allocator_t<__with_frame_alloc::__default_resource<true>>;
   inline constexpr with_frame_allocator_t with_frame_allocator{};
+
+  using with_unsynchronized_frame_allocator_t =
+    __with_frame_alloc::with_frame_allocator_t<__with_frame_alloc::__default_resource<false>>;
+  inline constexpr with_unsynchronized_frame_allocator_t with_unsynchronized_frame_allocator{};
 }  // namespace experimental::execution
 
 namespace exec = experimental::execution;
 
 namespace STDEXEC
 {
-  template <>
-  struct __sexpr_impl<exec::with_frame_allocator_t> : exec::__with_frame_alloc::__impls
+  template <class _Resource>
+  struct __sexpr_impl<exec::__with_frame_alloc::with_frame_allocator_t<_Resource>>
+    : exec::__with_frame_alloc::__impls<_Resource>
   {};
 }  // namespace STDEXEC
