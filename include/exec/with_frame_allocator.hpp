@@ -400,11 +400,11 @@ namespace experimental::execution
 
       static constexpr auto __get_env =
         []<class _Receiver>(__ignore, __opstate<_Receiver> const & __state) noexcept
-        -> __make_env_t<env_of_t<_Receiver>>
+        -> __make_env_t<__fwd_env_t<env_of_t<_Receiver>>>
       {
         return __env::__join(prop(get_frame_allocator,
                                   __frame_allocator<std::byte>(__state.__resource_)),
-                             STDEXEC::get_env(__state.__rcvr_));
+                             __fwd_env(STDEXEC::get_env(__state.__rcvr_)));
       };
 
       static constexpr auto __get_state =
@@ -427,7 +427,8 @@ namespace experimental::execution
       static consteval auto __get_completion_signatures()
       {
         static_assert(__sender_for<_Self, with_frame_allocator_t>);
-        return STDEXEC::get_completion_signatures<__child_of<_Self>, __make_env_t<_Env>>();
+        return STDEXEC::get_completion_signatures<__child_of<_Self>,
+                                                  __make_env_t<__fwd_env_t<_Env>>>();
       }
     };
   }  // namespace __with_frame_alloc
