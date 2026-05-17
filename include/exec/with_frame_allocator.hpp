@@ -307,63 +307,6 @@ namespace experimental::execution
       std::array<_Cache, __cache_count> __caches_{};
     };
 
-    template <class _Resource>
-    concept __memory_resource = requires(_Resource& __resource) {
-      { __resource.allocate(std::size_t{}, std::size_t{}) } -> __same_as<void*>;
-      { __resource.deallocate((void*) nullptr, std::size_t{}, std::size_t{}) } -> __same_as<void>;
-    };
-
-    template <__memory_resource _Resource>
-    struct __frame_allocator_base
-    {
-      constexpr explicit __frame_allocator_base(_Resource& __rsrc) noexcept
-        : __resource_(std::addressof(__rsrc))
-      {}
-
-      operator std::pmr::polymorphic_allocator<>() const noexcept
-      {
-        return std::pmr::polymorphic_allocator<>(__resource_);
-      }
-
-     protected:
-      constexpr void* __allocate(std::size_t __n)
-      {
-        return __resource_->allocate(__n, alignof(std::max_align_t));
-      }
-
-      constexpr void __deallocate(void* __p, std::size_t __n) noexcept
-      {
-        __resource_->deallocate(__p, __n, alignof(std::max_align_t));
-      }
-
-     private:
-      _Resource* __resource_;
-
-      friend bool operator==(__frame_allocator_base __lhs, __frame_allocator_base __rhs) noexcept
-      {
-        return *__lhs.__resource_ == *__rhs.__resource_;
-      }
-    };
-
-    template <class _Ty, __memory_resource _Resource = __chunked_caching_resource<>>
-    struct __frame_allocator : __frame_allocator_base<_Resource>
-    {
-      using value_type = _Ty;
-      using pointer    = value_type*;
-
-      using __frame_allocator_base<_Resource>::__frame_allocator_base;
-
-      constexpr pointer allocate(std::size_t __n)
-      {
-        return static_cast<pointer>(this->__allocate(__n));
-      }
-
-      constexpr void deallocate(pointer __p, std::size_t __n) noexcept
-      {
-        this->__deallocate(__p, __n);
-      }
-    };
-
     template <class _Receiver>
     struct __opstate
     {
@@ -388,7 +331,7 @@ namespace experimental::execution
 
     template <class... _Env>
     using __make_env_t =
-      __join_env_t<prop<get_frame_allocator_t, __frame_allocator<std::byte>>, _Env...>;
+      __join_env_t<prop<get_frame_allocator_t, __chunked_caching_resource<>*>, _Env...>;
 
     struct __impls : __sexpr_defaults
     {
@@ -402,8 +345,7 @@ namespace experimental::execution
         []<class _Receiver>(__ignore, __opstate<_Receiver> const & __state) noexcept
         -> __make_env_t<__fwd_env_t<env_of_t<_Receiver>>>
       {
-        return __env::__join(prop(get_frame_allocator,
-                                  __frame_allocator<std::byte>(__state.__resource_)),
+        return __env::__join(prop(get_frame_allocator, std::addressof(__state.__resource_)),
                              __fwd_env(STDEXEC::get_env(__state.__rcvr_)));
       };
 
