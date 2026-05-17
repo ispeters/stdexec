@@ -27,134 +27,214 @@ namespace experimental::execution
   {
     using namespace STDEXEC;
 
-    struct __unsynchronized_recycling_resource : std::pmr::memory_resource
+    template <auto _Next>
+    struct __atomic_intrusive_slist;
+
+    template <class _Item, _Item* _Item::* _Next>
+    struct __atomic_intrusive_slist<_Next>
     {
-      constexpr __unsynchronized_recycling_resource() noexcept = default;
+      constexpr __atomic_intrusive_slist() noexcept = default;
 
-      STDEXEC_IMMOVABLE(__unsynchronized_recycling_resource);
+      STDEXEC_IMMOVABLE(__atomic_intrusive_slist);
 
-      constexpr ~__unsynchronized_recycling_resource()
+      constexpr ~__atomic_intrusive_slist() = default;
+
+      [[nodiscard]]
+      constexpr auto empty() const noexcept -> bool
       {
-        for (auto* __chnk = __list_.front(); __chnk != nullptr;)
-        {
-          auto [__next, __size, __align] = *__chnk;
-          ::operator delete(static_cast<void*>(__chnk), __size, __align);
-          __chnk = __next;
-        }
+        return front() == nullptr;
       }
 
-      constexpr void* allocate(std::size_t __bytes, std::size_t __alignment)
+      [[nodiscard]]
+      constexpr auto front() const noexcept -> _Item*
       {
-        STDEXEC_ASSERT(__bytes >= sizeof(__chunk));
+        return __head_.load(__std::memory_order_acquire);
+      }
 
-        auto __align = static_cast<std::align_val_t>(__alignment);
+      // not nodiscard
+      constexpr auto clear() noexcept -> _Item*
+      {
+        return __head_.exchange(nullptr, __std::memory_order_acq_rel);
+      }
 
+      [[nodiscard]]
+      constexpr auto pop_front() noexcept -> _Item*
+      {
+        STDEXEC_ASSERT(!empty());
+        auto __result = __head_.load(__std::memory_order_relaxed);
+
+        while (!__head_.compare_exchange_weak(__result,
+                                              __result->*_Next,
+                                              // load-acquire and store-release on success
+                                              // to consume pushes and publish pops
+                                              __std::memory_order_acq_rel,
+                                              // load-relaxed on failure
+                                              __std::memory_order_relaxed))
+        {
+          // nothing
+        }
+
+        return __result;
+      }
+
+      constexpr void push_front(_Item* __item) noexcept
+      {
+        STDEXEC_ASSERT(__item != nullptr);
+        auto* __expected = __head_.load(__std::memory_order_relaxed);
+
+        do
+        {
+          __item->*_Next = __expected;
+        }
+        while (!__head_.compare_exchange_weak(__expected,
+                                              __item,
+                                              // store-release on success
+                                              __std::memory_order_release,
+                                              // load-relaxed on failure
+                                              __std::memory_order_relaxed));
+      }
+
+     private:
+      __std::atomic<_Item*> __head_{nullptr};
+    };
+
+    template <bool _Synchronized>
+    struct __recycling_resource
+    {
+      constexpr auto try_pop() -> void*
+      {
         if (__list_.empty())
         {
-          return ::operator new(__bytes, __align);
+          return nullptr;
         }
         else
         {
-          __chunk* __ret = __list_.pop_front();
-
-          STDEXEC_ASSERT(__ret->__size_ == __bytes);
-          STDEXEC_ASSERT(__ret->__align_ == __align);
-
-          return __ret;
+          return __list_.pop_front();
         }
       }
 
-      constexpr void deallocate(void* __p, std::size_t __bytes, std::size_t __align) noexcept
+      constexpr void push(void* __p) noexcept
       {
-        __chunk* __chnk = new (__p) __chunk(__bytes, std::align_val_t(__align));
+        __list_.push_front(new (__p) __chunk);
+      }
 
-        __list_.push_front(__chnk);
+      template <class _Deleter>
+        requires __nothrow_invocable<_Deleter const &, void*>
+      constexpr void delete_all(_Deleter const & __deleter) noexcept
+      {
+        auto* __current = __list_.clear();
+        while (__current != nullptr)
+        {
+          __deleter((void*) std::exchange(__current, __current->__next_));
+        }
       }
 
      private:
       struct __chunk
       {
-        __chunk* __next_{nullptr};
-
-        std::size_t      __size_;
-        std::align_val_t __align_;
-
-        constexpr explicit __chunk(std::size_t __size, std::align_val_t __align) noexcept
-          : __size_(__size)
-          , __align_(__align)
-        {}
+        __chunk* __next_;
       };
 
-      __intrusive_slist<&__chunk::__next_> __list_;
+      template <auto _Next>
+      using __list_t =
+        __if_c<_Synchronized, __atomic_intrusive_slist<_Next>, __intrusive_slist<_Next>>;
 
-      constexpr void* do_allocate(std::size_t __bytes, std::size_t __align) final
-      {
-        return allocate(__bytes, __align);
-      }
-
-      constexpr void do_deallocate(void* __p, std::size_t __bytes, std::size_t __align) final
-      {
-        deallocate(__p, __bytes, __align);
-      }
-
-      constexpr bool do_is_equal(std::pmr::memory_resource const & __other) const noexcept final
-      {
-        return this == &__other;
-      }
+      __list_t<&__chunk::__next_> __list_;
     };
 
-    template <class _Resource>
-    concept __memory_resource = requires(_Resource& __resource) {
-      { __resource.allocate(std::size_t{}, std::size_t{}) } -> __same_as<void*>;
-      { __resource.deallocate((void*) nullptr, std::size_t{}, std::size_t{}) } -> __same_as<void>;
-    };
-
-    template <__memory_resource _Resource = __unsynchronized_recycling_resource>
+    template <class _Resource = __recycling_resource<true>>
     struct __chunked_resource : std::pmr::memory_resource
     {
       constexpr __chunked_resource() noexcept = default;
 
       STDEXEC_IMMOVABLE(__chunked_resource);
 
-      constexpr ~__chunked_resource() = default;
-
-      constexpr void* allocate(std::size_t __bytes, std::size_t __align)
+      constexpr ~__chunked_resource()
       {
-        // delegate to the appropriate chunk if __bytes is small enough
-        if (auto __chunk_index = __chunk_index_of(__bytes); __chunk_index < __chunk_count)
+        std::size_t __size = __smallest_chunk;
+        // capture __size by reference because we're going to change it
+        auto __deleter = [&__size](void* __p) noexcept
         {
-          return __chunks_[__chunk_index].allocate(__bytes, __align);
-        }
-        else
+          __deallocate(__p, __size, __uniform_alignment);
+        };
+
+        for (auto& __chunk: __chunks_)
         {
-          // __bytes is bigger than the largest chunk so just punt to ::new
-          return ::operator new(__bytes, static_cast<std::align_val_t>(__align));
+          __chunk.delete_all(__deleter);
+          __size <<= 1;
         }
       }
 
-      constexpr void deallocate(void* __p, std::size_t __bytes, std::size_t __align) noexcept
+      //! hide memory_resource::allocate so that users that know our concrete type can
+      //! skip virtual dispatch; our implementation of do_allocate delegates here to
+      //! satisfy the requirements of subclasses of memory_resource
+      constexpr auto allocate(std::size_t __bytes, std::size_t __align = __uniform_alignment)  //
+        -> void*
       {
-        if (auto __chunk_index = __chunk_index_of(__bytes); __chunk_index < __chunk_count)
+        auto __chunk_index = __chunk_index_of(__bytes);
+
+        // check if the request is suitably sized and aligned that we might be able to
+        // serve it from our cache
+        if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
         {
-          STDEXEC_TRY
+          // try_pop is expected to return nullptr if the cache is empty
+          if (void* __allocation = __chunks_[__chunk_index].try_pop())
           {
-            // delegate deallocation to the appropriate chunk
-            __chunks_[__chunk_index].deallocate(__p, __bytes, __align);
+            // cache hit, yay!
+            return __allocation;
           }
-          STDEXEC_CATCH(...)
+          else
           {
-            // deallocate is required to "throw nothing" but is not marked noexcept...
-            std::unreachable();
+            // boo, cache miss
+            // override the alignment so that cache entries are uniformly aligned
+            return __allocate(__bytes, __uniform_alignment);
           }
+        }
+
+        // the request is either too big or over-aligned so it can't have been cached
+        return __allocate(__bytes, __align);
+      }
+
+      //! hide memory_resource::deallocate so that users that know our concrete type can
+      //! skip virtual dispatch; our implementation of do_deallocate delegates here to
+      //! satisfy the requirements of subclasses of memory_resource
+      constexpr void
+      deallocate(void* __p, std::size_t __bytes, std::size_t __align = __uniform_alignment) noexcept
+      {
+        auto __chunk_index = __chunk_index_of(__bytes);
+
+        if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
+        {
+          // this allocation is suitably sized and aligned to be cached
+          __chunks_[__chunk_index].push(__p);
         }
         else
         {
-          // __p points at an allocation that's too big for us to have cached
-          ::operator delete(__p, __bytes, static_cast<std::align_val_t>(__align));
+          // we don't cache over-aligned allocations or allocations that are "too big"
+          __deallocate(__p, __bytes, __align);
         }
       }
 
      private:
+      //! convenience wrapper for ::operator new;
+      //! this saves us from casting size_t to align_val_t in more than one place and
+      //! leaves open the possibility of supporting an "upstream" memory_resource other
+      //! than new_delete_resource
+      static constexpr auto __allocate(std::size_t __bytes, std::size_t __align)  //
+        -> void*
+      {
+        return ::operator new(__bytes, static_cast<std::align_val_t>(__align));
+      }
+
+      //! convenience wrapper for ::operator delete
+      //! provides the same benefits as __allocate
+      static constexpr void
+      __deallocate(void* __p, std::size_t __bytes, std::size_t __align) noexcept
+      {
+        ::operator delete(__p, __bytes, static_cast<std::align_val_t>(__align));
+      }
+
+      //! implement the memory_resource virtual interface
       constexpr void* do_allocate(std::size_t __bytes, std::size_t __align) final
       {
         return allocate(__bytes, __align);
@@ -171,11 +251,19 @@ namespace experimental::execution
         return static_cast<std::pmr::memory_resource const *>(this) == &__other;
       }
 
-      // the number of bytes in the smallest allocation
+      //! the alignment of all cached allocations
+      //! must be alignof(std::max_align_t) because it's used as the default for the
+      //! alignment argument to allocate and deallocate, which must have the same
+      //! signatures as the corresponding member functions on memory_resource
+      static constexpr std::size_t __uniform_alignment = alignof(std::max_align_t);
+
+      //! the number of bytes in the smallest cached allocation
       static constexpr std::size_t __smallest_chunk = 64;
-      // the number of allocation sizes before falling back to ::new
+      //! the number of allocation sizes before falling back to ::new
       static constexpr std::size_t __chunk_count = 10;
 
+      //! given a request for an allocation of size __bytes, how many bytes should we
+      //! actually allocate?
       static constexpr std::size_t __allocation_size_of(std::size_t __bytes) noexcept
       {
         // round __bytes up to the nearest power of two that is at least
@@ -183,6 +271,8 @@ namespace experimental::execution
         return std::bit_ceil(__bytes | __smallest_chunk);
       }
 
+      //! given a request for an allocation of size __bytes, which chunk should be
+      //! responsible for caching the allocation?
       static constexpr std::size_t __chunk_index_of(std::size_t __bytes) noexcept
       {
         // compute the index into __chunks_ containing the cached allocations for
@@ -191,7 +281,16 @@ namespace experimental::execution
         return std::countr_zero(__allocation_size_of(__bytes)) - std::countr_zero(__smallest_chunk);
       }
 
+      //! the allocation cache
+      //! each entry in the array cache allocations twice as big as the one prior, with
+      //! the first entry caching allocations of size __smallest_chunk
       std::array<_Resource, __chunk_count> __chunks_{};
+    };
+
+    template <class _Resource>
+    concept __memory_resource = requires(_Resource& __resource) {
+      { __resource.allocate(std::size_t{}, std::size_t{}) } -> __same_as<void*>;
+      { __resource.deallocate((void*) nullptr, std::size_t{}, std::size_t{}) } -> __same_as<void>;
     };
 
     template <__memory_resource _Resource>

@@ -62,14 +62,16 @@ namespace STDEXEC
         return __head_ == nullptr;
       }
 
+      [[nodiscard]]
       constexpr auto front() const noexcept -> _Item*
       {
         return __head_;
       }
 
-      constexpr void clear() noexcept
+      // not nodiscard
+      constexpr auto clear() noexcept -> _Item*
       {
-        __head_ = nullptr;
+        return std::exchange(__head_, nullptr);
       }
 
       [[nodiscard]]
