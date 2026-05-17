@@ -99,9 +99,18 @@ namespace experimental::execution
     };
 
     template <bool _Synchronized>
-    struct __recycling_resource
+    struct __linked_stack_cache
     {
-      constexpr auto try_pop() -> void*
+      constexpr __linked_stack_cache() noexcept = default;
+
+      STDEXEC_IMMOVABLE(__linked_stack_cache);
+
+      constexpr ~__linked_stack_cache()
+      {
+        STDEXEC_ASSERT(__list_.empty() && "you must invoke deallocate_all before the destructor");
+      }
+
+      constexpr auto try_get() noexcept -> void*
       {
         if (__list_.empty())
         {
@@ -113,14 +122,14 @@ namespace experimental::execution
         }
       }
 
-      constexpr void push(void* __p) noexcept
+      constexpr void put(void* __p) noexcept
       {
         __list_.push_front(new (__p) __chunk);
       }
 
       template <class _Deleter>
         requires __nothrow_invocable<_Deleter const &, void*>
-      constexpr void delete_all(_Deleter const & __deleter) noexcept
+      constexpr void deallocate_all(_Deleter const & __deleter) noexcept
       {
         auto* __current = __list_.clear();
         while (__current != nullptr)
@@ -142,7 +151,17 @@ namespace experimental::execution
       __list_t<&__chunk::__next_> __list_;
     };
 
-    template <class _Resource = __recycling_resource<true>>
+    template <class _Resource>
+    concept __allocation_cache = requires(_Resource& __rsrc) {
+      { __rsrc.try_get() } noexcept -> __same_as<void*>;
+      // maybe put should be try_put if bounded caches become a thing
+      { __rsrc.put((void*) nullptr) } noexcept;
+      {
+        __rsrc.deallocate_all([](void*) noexcept {})
+      } noexcept;
+    };
+
+    template <__allocation_cache _Cache = __linked_stack_cache<true>>
     struct __chunked_resource : std::pmr::memory_resource
     {
       constexpr __chunked_resource() noexcept = default;
@@ -160,7 +179,7 @@ namespace experimental::execution
 
         for (auto& __chunk: __chunks_)
         {
-          __chunk.delete_all(__deleter);
+          __chunk.deallocate_all(__deleter);
           __size <<= 1;
         }
       }
@@ -177,8 +196,8 @@ namespace experimental::execution
         // serve it from our cache
         if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
         {
-          // try_pop is expected to return nullptr if the cache is empty
-          if (void* __allocation = __chunks_[__chunk_index].try_pop())
+          // try_get is expected to return nullptr if the cache is empty
+          if (void* __allocation = __chunks_[__chunk_index].try_get())
           {
             // cache hit, yay!
             return __allocation;
@@ -206,7 +225,7 @@ namespace experimental::execution
         if (__chunk_index < __chunk_count && __align <= __uniform_alignment)
         {
           // this allocation is suitably sized and aligned to be cached
-          __chunks_[__chunk_index].push(__p);
+          __chunks_[__chunk_index].put(__p);
         }
         else
         {
@@ -284,7 +303,7 @@ namespace experimental::execution
       //! the allocation cache
       //! each entry in the array cache allocations twice as big as the one prior, with
       //! the first entry caching allocations of size __smallest_chunk
-      std::array<_Resource, __chunk_count> __chunks_{};
+      std::array<_Cache, __chunk_count> __chunks_{};
     };
 
     template <class _Resource>
