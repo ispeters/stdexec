@@ -19,6 +19,8 @@
 
 #include "../stdexec/execution.hpp"
 
+#include "__atomic_intrusive_slist.hpp"
+
 #include <memory>
 
 namespace experimental::execution
@@ -26,77 +28,6 @@ namespace experimental::execution
   namespace __with_frame_alloc
   {
     using namespace STDEXEC;
-
-    template <auto _Next>
-    struct __atomic_intrusive_slist;
-
-    template <class _Item, _Item* _Item::* _Next>
-    struct __atomic_intrusive_slist<_Next>
-    {
-      constexpr __atomic_intrusive_slist() noexcept = default;
-
-      STDEXEC_IMMOVABLE(__atomic_intrusive_slist);
-
-      constexpr ~__atomic_intrusive_slist() = default;
-
-      [[nodiscard]]
-      constexpr auto empty() const noexcept -> bool
-      {
-        return front() == nullptr;
-      }
-
-      [[nodiscard]]
-      constexpr auto front() const noexcept -> _Item*
-      {
-        return __head_.load(__std::memory_order_acquire);
-      }
-
-      // not nodiscard
-      constexpr auto clear() noexcept -> _Item*
-      {
-        return __head_.exchange(nullptr, __std::memory_order_acq_rel);
-      }
-
-      [[nodiscard]]
-      constexpr auto pop_front() noexcept -> _Item*
-      {
-        STDEXEC_ASSERT(!empty());
-        auto __result = __head_.load(__std::memory_order_relaxed);
-
-        while (!__head_.compare_exchange_weak(__result,
-                                              __result->*_Next,
-                                              // load-acquire and store-release on success
-                                              // to consume pushes and publish pops
-                                              __std::memory_order_acq_rel,
-                                              // load-relaxed on failure
-                                              __std::memory_order_relaxed))
-        {
-          // nothing
-        }
-
-        return __result;
-      }
-
-      constexpr void push_front(_Item* __item) noexcept
-      {
-        STDEXEC_ASSERT(__item != nullptr);
-        auto* __expected = __head_.load(__std::memory_order_relaxed);
-
-        do
-        {
-          __item->*_Next = __expected;
-        }
-        while (!__head_.compare_exchange_weak(__expected,
-                                              __item,
-                                              // store-release on success
-                                              __std::memory_order_release,
-                                              // load-relaxed on failure
-                                              __std::memory_order_relaxed));
-      }
-
-     private:
-      __std::atomic<_Item*> __head_{nullptr};
-    };
 
     template <bool _Synchronized>
     struct __linked_stack_cache
