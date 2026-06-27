@@ -320,6 +320,13 @@ namespace experimental::execution
       && ((!__has_completion_domain<_Attrs, set_error_t>) || _Sigs::__count(set_error) > 0)  //
       && ((!__has_completion_domain<_Attrs, set_stopped_t>) || _Sigs::__count(set_stopped) > 0);
 
+    template <class _Self>
+    struct __self_box
+    {};
+
+    struct __self_tag
+    {};
+
     //! the main implementation of the type-erasing sender function<...>
     //
     //! \tparam _Sigs The supported completion signatures
@@ -342,6 +349,7 @@ namespace experimental::execution
       static_assert(__is_instance_of<_Attrs, attrs>);
       static_assert(__completion_signatures_and_domains_are_compatible<_Sigs, _Attrs>);
 
+     protected:
       using __receiver_t = __receiver_wrapper<__any_receiver_ref<_Sigs, _Queries>>;
 
       template <class _Receiver>
@@ -441,6 +449,159 @@ namespace experimental::execution
       {
         return __function(*this).connect(static_cast<_Receiver &&>(__rcvr));
       }
+    };
+
+    template <class _Sigs, class _Queries, class _Attrs, class... _Args>
+    class __function<_Sigs, _Queries, _Attrs, __self_box<__self_tag &>, _Args...>
+      : public __function<_Sigs, _Queries, _Attrs, void *, _Args...>
+    {
+      using __base = __function<_Sigs, _Queries, _Attrs, void *, _Args...>;
+
+      using __receiver_t = __base::__receiver_t;
+
+      template <class _Self, class _Factory>
+      struct __factory
+      {
+        _Factory __fact;
+
+        decltype(auto) operator()(void *__self, _Args &&...__args)
+          noexcept(__nothrow_invocable<_Factory, _Self &, _Args...>)
+        {
+          return __fact(*static_cast<_Self *>(__self), static_cast<_Args &&>(__args)...);
+        }
+      };
+
+     public:
+      template <class _Self, __invocable<_Self &, _Args...> _Factory>
+        requires __not_decays_to<_Factory, __function>                 //
+              && (STDEXEC_IS_TRIVIALLY_COPYABLE(_Factory))             //
+              && (sizeof(_Factory) <= sizeof(__base::__make_sender_))  //
+              && sender_to<__invoke_result_t<_Factory, _Self &, _Args...>, __receiver_t>
+              && __completion_domains_match<__invoke_result_t<_Factory, _Self &, _Args...>,
+                                            __function,
+                                            env_of_t<__receiver_t>>
+      constexpr explicit __function(_Self &__self, _Args &&...__args, _Factory __fact)
+        noexcept(__nothrow_constructible_from<__base, void *, _Args..., __factory<_Self, _Factory>>)
+        : __base(std::addressof(__self),
+                 static_cast<_Args &&>(__args)...,
+                 __factory<_Self, _Factory>{__fact})
+      {}
+    };
+
+    template <class _Sigs, class _Queries, class _Attrs, class... _Args>
+    class __function<_Sigs, _Queries, _Attrs, __self_box<__self_tag const &>, _Args...>
+      : public __function<_Sigs, _Queries, _Attrs, void const *, _Args...>
+    {
+      using __base = __function<_Sigs, _Queries, _Attrs, void const *, _Args...>;
+
+      using __receiver_t = __base::__receiver_t;
+
+      template <class _Self, class _Factory>
+      struct __factory
+      {
+        _Factory __fact;
+
+        decltype(auto) operator()(void const *__self, _Args &&...__args)
+          noexcept(__nothrow_invocable<_Factory, _Self const &, _Args...>)
+        {
+          return __fact(*static_cast<_Self const *>(__self), static_cast<_Args &&>(__args)...);
+        }
+      };
+
+     public:
+      template <class _Self, __invocable<_Self const &, _Args...> _Factory>
+        requires __not_decays_to<_Factory, __function>                 //
+              && (STDEXEC_IS_TRIVIALLY_COPYABLE(_Factory))             //
+              && (sizeof(_Factory) <= sizeof(__base::__make_sender_))  //
+              && sender_to<__invoke_result_t<_Factory, _Self const &, _Args...>, __receiver_t>
+              && __completion_domains_match<__invoke_result_t<_Factory, _Self const &, _Args...>,
+                                            __function,
+                                            env_of_t<__receiver_t>>
+      constexpr explicit __function(_Self const &__self, _Args &&...__args, _Factory __fact)
+        noexcept(
+          __nothrow_constructible_from<__base, void const *, _Args..., __factory<_Self, _Factory>>)
+        : __base(std::addressof(__self),
+                 static_cast<_Args &&>(__args)...,
+                 __factory<_Self, _Factory>{__fact})
+      {}
+    };
+
+    template <class _Sigs, class _Queries, class _Attrs, class... _Args>
+    class __function<_Sigs, _Queries, _Attrs, __self_box<__self_tag &&>, _Args...>
+      : public __function<_Sigs, _Queries, _Attrs, void *, _Args...>
+    {
+      using __base = __function<_Sigs, _Queries, _Attrs, void *, _Args...>;
+
+      using __receiver_t = __base::__receiver_t;
+
+      template <class _Self, class _Factory>
+      struct __factory
+      {
+        _Factory __fact;
+
+        decltype(auto) operator()(void *__self, _Args &&...__args)
+          noexcept(__nothrow_invocable<_Factory, _Self, _Args...>)
+        {
+          return __fact(static_cast<_Self &&>(*static_cast<_Self *>(__self)),
+                        static_cast<_Args &&>(__args)...);
+        }
+      };
+
+     public:
+      template <class _Self, __invocable<_Self, _Args...> _Factory>
+        requires std::is_rvalue_reference_v<_Self &&>                  //
+              && __not_decays_to<_Factory, __function>                 //
+              && (STDEXEC_IS_TRIVIALLY_COPYABLE(_Factory))             //
+              && (sizeof(_Factory) <= sizeof(__base::__make_sender_))  //
+              && sender_to<__invoke_result_t<_Factory, _Self, _Args...>, __receiver_t>
+              && __completion_domains_match<__invoke_result_t<_Factory, _Self, _Args...>,
+                                            __function,
+                                            env_of_t<__receiver_t>>
+      constexpr explicit __function(_Self &&__self, _Args &&...__args, _Factory __fact)
+        noexcept(__nothrow_constructible_from<__base, void *, _Args..., __factory<_Self, _Factory>>)
+        : __base(std::addressof(__self),
+                 static_cast<_Args &&>(__args)...,
+                 __factory<_Self, _Factory>{__fact})
+      {}
+    };
+
+    template <class _Sigs, class _Queries, class _Attrs, class... _Args>
+    class __function<_Sigs, _Queries, _Attrs, __self_box<__self_tag const &&>, _Args...>
+      : public __function<_Sigs, _Queries, _Attrs, void const *, _Args...>
+    {
+      using __base = __function<_Sigs, _Queries, _Attrs, void const *, _Args...>;
+
+      using __receiver_t = __base::__receiver_t;
+
+      template <class _Self, class _Factory>
+      struct __factory
+      {
+        _Factory __fact;
+
+        decltype(auto) operator()(void const *__self, _Args &&...__args)
+          noexcept(__nothrow_invocable<_Factory, _Self const, _Args...>)
+        {
+          return __fact(static_cast<_Self const &&>(*static_cast<_Self const *>(__self)),
+                        static_cast<_Args &&>(__args)...);
+        }
+      };
+
+     public:
+      template <class _Self, __invocable<_Self const, _Args...> _Factory>
+        requires __not_decays_to<_Factory, __function>                 //
+              && (STDEXEC_IS_TRIVIALLY_COPYABLE(_Factory))             //
+              && (sizeof(_Factory) <= sizeof(__base::__make_sender_))  //
+              && sender_to<__invoke_result_t<_Factory, _Self const, _Args...>, __receiver_t>
+              && __completion_domains_match<__invoke_result_t<_Factory, _Self const, _Args...>,
+                                            __function,
+                                            env_of_t<__receiver_t>>
+      constexpr explicit __function(_Self const &&__self, _Args &&...__args, _Factory __fact)
+        noexcept(
+          __nothrow_constructible_from<__base, void const *, _Args..., __factory<_Self, _Factory>>)
+        : __base(std::addressof(__self),
+                 static_cast<_Args &&>(__args)...,
+                 __factory<_Self, _Factory>{__fact})
+      {}
     };
 
     template <auto _Types, template <class...> class _Template, std::size_t... _Is>
@@ -558,6 +719,26 @@ namespace experimental::execution
      public:
       using type = __function<__sigs, __queries, __attrs, _Args...>;
     };
+
+    template <class _Return, class... _Args>
+    class __make_function<_Return(_Args...) &>
+      : public __make_function<_Return(__self_box<__self_tag &>, _Args...)>
+    {};
+
+    template <class _Return, class... _Args>
+    class __make_function<_Return(_Args...) const &>
+      : public __make_function<_Return(__self_box<__self_tag const &>, _Args...)>
+    {};
+
+    template <class _Return, class... _Args>
+    class __make_function<_Return(_Args...) &&>
+      : public __make_function<_Return(__self_box<__self_tag &&>, _Args...)>
+    {};
+
+    template <class _Return, class... _Args>
+    class __make_function<_Return(_Args...) const &&>
+      : public __make_function<_Return(__self_box<__self_tag const &&>, _Args...)>
+    {};
 
     template <class _Return, class... _Args>
     class __make_function<_Return(_Args...) noexcept>

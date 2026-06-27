@@ -779,4 +779,75 @@ namespace
         function_exists<ex::completion_signatures<ex::set_value_t()>, exec::attrs<int(query_t)>>);
     }
   }
+
+  TEST_CASE("support for member functions works as expected", "[types][function]")
+  {
+    struct example
+    {
+      exec::function<int() const &> get_int() const &
+      {
+        return exec::function<int() const &>(*this,
+                                             [](example const &self) { return ex::just(self.i_); });
+      }
+
+      exec::function<int() const &&> get_int() const &&
+      {
+        return exec::function<int() const &&>(std::move(*this),
+                                              [](auto &&self) { return ex::just(self.i_); });
+      }
+
+      exec::function<example &(int) &> set_int(int i) &
+      {
+        return exec::function<example &(int) &>(*this,
+                                                int(i),
+                                                [](auto &self, int i)
+                                                {
+                                                  return ex::just(i)
+                                                       | ex::then(
+                                                           [&self](int i) -> decltype(auto)
+                                                           {
+                                                             self.i_ = i;
+                                                             return self;
+                                                           });
+                                                });
+      }
+
+      exec::function<example && (int) &&> set_int(int i) &&
+      {
+        return exec::function<example && (int) &&>(std::move(*this),
+                                                   int(i),
+                                                   [](auto &&self, int i)
+                                                   {
+                                                     return ex::just(i)
+                                                          | ex::then(
+                                                              [&self](int i) -> decltype(auto)
+                                                              {
+                                                                self.i_ = i;
+                                                                return std::move(self);
+                                                              });
+                                                   });
+      }
+
+     private:
+      int i_{42};
+    };
+
+    {
+      example e;
+
+      auto [result] =
+        ex::sync_wait(e.set_int(34) | ex::let_value([](auto &e) { return e.get_int(); })).value();
+
+      REQUIRE(result == 34);
+    }
+
+    {
+      auto [result] = ex::sync_wait(
+                        example{}.set_int(84)
+                        | ex::let_value([](auto const &self) { return std::move(self).get_int(); }))
+                        .value();
+
+      REQUIRE(result == 84);
+    }
+  }
 }  // namespace
