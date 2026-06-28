@@ -287,17 +287,17 @@ namespace
 
   struct iface
   {
-    virtual exec::function<int() noexcept> get_i_virtually() const noexcept = 0;
+    virtual exec::function<int() const & noexcept> get_i_virtually() const noexcept = 0;
   };
 
   struct iface2
   {
-    exec::function<int(iface2 const *) noexcept> get_i_from_base() const noexcept
+    exec::function<int() const & noexcept> get_i_from_base() const noexcept
     {
-      return exec::function<int(iface2 const *) noexcept>(this, &iface2::get_i_virtually);
+      return exec::function<int() const & noexcept>(*this, &iface2::get_i_virtually);
     }
 
-    virtual exec::function<int() noexcept> get_i_virtually() const noexcept = 0;
+    virtual exec::function<int() const & noexcept> get_i_virtually() const noexcept = 0;
   };
 
   struct impl
@@ -318,19 +318,14 @@ namespace
       return self->just_i();
     }
 
-    exec::function<int() noexcept> get_i_with_capture() const noexcept
-    {
-      return exec::function<int() noexcept>([this]() noexcept { return just_i(); });
-    }
-
     exec::function<int(impl const *) noexcept> get_i_with_pmfn() const noexcept
     {
       return exec::function<int(impl const *) noexcept>(this, &impl::just_i);
     }
 
-    exec::function<int() noexcept> get_i_virtually() const noexcept override
+    exec::function<int() const & noexcept> get_i_virtually() const noexcept override
     {
-      return get_i_with_capture();
+      return exec::function<int() const & noexcept>(*this, &impl::just_i);
     }
 
    private:
@@ -339,13 +334,6 @@ namespace
 
   TEST_CASE("exec::function accepts small trivially-copyable callables", "[types][function]")
   {
-    SECTION("function<int() noexcept> accepts a lambda capturing this")
-    {
-      auto [ret] = ex::sync_wait(impl{42}.get_i_with_capture()).value();
-
-      REQUIRE(ret == 42);
-    }
-
     SECTION("function<int(impl const *) noexcept> accepts a pointer-to-member function")
     {
       auto [ret] = ex::sync_wait(impl{42}.get_i_with_pmfn()).value();
