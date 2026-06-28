@@ -845,95 +845,74 @@ namespace experimental::execution
 
     template <__is_not_sender_tag_function _Signature>
     class __make_function<_Signature>
-    {
-      using __sigs    = __completion_sigs_from<_Signature>;
-      using __queries = queries<>;
-      using __attrs   = __default_attrs<__sigs>;
+      : public __make_function<_Signature,
+                               queries<>,
+                               __default_attrs<__completion_sigs_from<_Signature>>>
+    {};
 
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
-    };
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs>
+    class __make_function<_Signature, _ComplSigs>
+      : public __make_function<_Signature, _ComplSigs, queries<>, __default_attrs<_ComplSigs>>
+    {};
 
-    template <__is_sender_tag_function _Signature, class... _Sigs>
-    class __make_function<_Signature, completion_signatures<_Sigs...>>
-    {
-      using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
-      using __queries = queries<>;
-      using __attrs   = __default_attrs<__sigs>;
+    template <__is_not_sender_tag_function _Signature, __is_instance_of<queries> _Queries>
+    class __make_function<_Signature, _Queries>
+      : public __make_function<_Signature,
+                               _Queries,
+                               __default_attrs<__completion_sigs_from<_Signature>>>
+    {};
 
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
-    };
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs,
+              __is_instance_of<queries>               _Queries>
+    class __make_function<_Signature, _ComplSigs, _Queries>
+      : public __make_function<_Signature, _ComplSigs, _Queries, __default_attrs<_ComplSigs>>
+    {};
 
-    template <__is_not_sender_tag_function _Signature, class... _Queries>
-    class __make_function<_Signature, queries<_Queries...>>
-    {
-      using __sigs    = __completion_sigs_from<_Signature>;
-      using __queries = __canonical_t<queries<_Queries...>>;
-      using __attrs   = __default_attrs<__sigs>;
-
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
-    };
-
-    template <__is_sender_tag_function _Signature, class... _Sigs, class... _Queries>
-    class __make_function<_Signature, completion_signatures<_Sigs...>, queries<_Queries...>>
-    {
-      using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
-      using __queries = __canonical_t<queries<_Queries...>>;
-      using __attrs   = __default_attrs<__sigs>;
-
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
-    };
-
-    template <__is_not_sender_tag_function _Signature, class... _Args, class... _Attrs>
+    template <__is_not_sender_tag_function _Signature, __is_instance_of<attrs> _Attrs>
       requires __completion_signatures_and_domains_are_compatible<
         __completion_sigs_from<_Signature>,
-        attrs<_Attrs...>>
-    class __make_function<_Signature, attrs<_Attrs...>>
+        _Attrs>
+    class __make_function<_Signature, _Attrs>
+      : public __make_function<_Signature, queries<>, _Attrs>
+    {};
+
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs,
+              __is_instance_of<attrs>                 _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<_ComplSigs, _Attrs>
+    class __make_function<_Signature, _ComplSigs, _Attrs>
+      : public __make_function<_Signature, _ComplSigs, queries<>, _Attrs>
+    {};
+
+    template <__is_not_sender_tag_function _Signature,
+              __is_instance_of<queries>    _Queries,
+              __is_instance_of<attrs>      _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<
+        __completion_sigs_from<_Signature>,
+        _Attrs>
+    class __make_function<_Signature, _Queries, _Attrs>
     {
       using __sigs    = __completion_sigs_from<_Signature>;
-      using __queries = queries<>;
-      using __attrs   = __canonical_t<attrs<_Attrs...>>;
+      using __queries = __canonical_t<_Queries>;
+      using __attrs   = __canonical_t<_Attrs>;
 
      public:
       using type =
         __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <__is_sender_tag_function _Signature, class... _Sigs, class... _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<completion_signatures<_Sigs...>,
-                                                                  attrs<_Attrs...>>
-    class __make_function<_Signature, completion_signatures<_Sigs...>, attrs<_Attrs...>>
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _Sigs,
+              __is_instance_of<queries>               _Queries,
+              __is_instance_of<attrs>                 _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<_Sigs, _Attrs>
+    class __make_function<_Signature, _Sigs, _Queries, _Attrs>
     {
-      using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
-      using __queries = queries<>;
-      using __attrs   = __canonical_t<attrs<_Attrs...>>;
-
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
-    };
-
-    template <__is_sender_tag_function _Signature,
-              class... _Sigs,
-              class... _Queries,
-              class... _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<completion_signatures<_Sigs...>,
-                                                                  attrs<_Attrs...>>
-    class __make_function<_Signature,
-                          completion_signatures<_Sigs...>,
-                          queries<_Queries...>,
-                          attrs<_Attrs...>>
-    {
-      using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
-      using __queries = __canonical_t<queries<_Queries...>>;
-      using __attrs   = __canonical_t<attrs<_Attrs...>>;
+      using __sigs    = __canonical_t<_Sigs>;
+      using __queries = __canonical_t<_Queries>;
+      using __attrs   = __canonical_t<_Attrs>;
 
      public:
       using type =
