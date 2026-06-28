@@ -615,8 +615,8 @@ namespace experimental::execution
     consteval auto __canonicalize(_List<_Types...> *) noexcept
     {
       using __types_t        = __static_vector<__type_index, sizeof...(_Types)>;
-      constexpr auto __types = __func::__canonicalize_impl(__types_t{__mtypeid<_Types>...});
-      return __func::__canonicalize_splice<__types, _List>(__make_indices<__types.size()>());
+      constexpr auto __types = __canonicalize_impl(__types_t{__mtypeid<_Types>...});
+      return __canonicalize_splice<__types, _List>(__make_indices<__types.size()>());
     }
 
     //! Map the type-list _Sigs to a canonical form, which sorts and uniques the contained
@@ -625,7 +625,7 @@ namespace experimental::execution
     //! \tparam _Sigs a type-list of types to be sorted and uniqued; expected to be a
     //!         specialization of completion_signatures or queries.
     template <class _Sigs>
-    using __canonical_t = decltype(__func::__canonicalize(static_cast<_Sigs *>(nullptr)));
+    using __canonical_t = decltype(__canonicalize(static_cast<_Sigs *>(nullptr)));
 
     template <class _Signature>
     struct __function_meta;
@@ -638,7 +638,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = false;
 
       template <class... _LeadingArgs>
-      using __make_function = __func::__function<_LeadingArgs..., _Args...>;
+      using __make_function = __function<_LeadingArgs..., _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -649,8 +649,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = false;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -661,8 +660,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = false;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -673,8 +671,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = false;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -686,7 +683,7 @@ namespace experimental::execution
 
       template <class... _LeadingArgs>
       using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
+        __function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -697,7 +694,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = true;
 
       template <class... _LeadingArgs>
-      using __make_function = __func::__function<_LeadingArgs..., _Args...>;
+      using __make_function = __function<_LeadingArgs..., _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -708,8 +705,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = true;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -720,8 +716,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = true;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -732,8 +727,7 @@ namespace experimental::execution
       static constexpr bool __noexcept = true;
 
       template <class... _LeadingArgs>
-      using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
+      using __make_function = __function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
     };
 
     template <class _Return, class... _Args>
@@ -745,7 +739,7 @@ namespace experimental::execution
 
       template <class... _LeadingArgs>
       using __make_function =
-        __func::__function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
+        __function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
     };
 
     template <class _Ty>
