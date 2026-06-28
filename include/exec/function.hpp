@@ -544,6 +544,23 @@ namespace experimental::execution
       }
     };
 
+    //! This specialization of __function handles "member functions", which are created
+    //! by specializing __make_function (below) with a cvref-qualified function type to
+    //! indicate that the argument list includes an implicit self object (with the given
+    //! cvref qualifiers). _SelfBox is effectively a tag type whose type parameter is a
+    //! tag type conveying the cvref qualifiers of the implicit object parameter.
+    //!
+    //! Member functions are implemented in terms of a (possibly const) void pointer and
+    //! a sender factory adaptor that captures the real type of the implicit object and
+    //! casts the stored void pointer back to the correct type upon invocation.
+    //!
+    //! \tparam _Sigs the functions possible completion signatures
+    //! \tparam _Queries the queries required to be supported by the environment of the
+    //!                  receiver to which this function is ultimately connected
+    //! \tparam _Attrs the queries supported by this function's attributes
+    //! \tparam _SelfBox the tag type conveying the cvref qualifiers of the implicit
+    //!                  object parameter
+    //! \tparam _Args the pack of explicit arguments to the sender factory
     template <class _Sigs,
               class _Queries,
               class _Attrs,
@@ -610,6 +627,145 @@ namespace experimental::execution
     template <class _Sigs>
     using __canonical_t = decltype(__func::__canonicalize(static_cast<_Sigs *>(nullptr)));
 
+    template <class _Signature>
+    struct __function_meta;
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...)>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = false;
+
+      template <class... _LeadingArgs>
+      using __make_function = __func::__function<_LeadingArgs..., _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) &>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = false;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) const &>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = false;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) &&>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = false;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) const &&>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = false;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) noexcept>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = true;
+
+      template <class... _LeadingArgs>
+      using __make_function = __func::__function<_LeadingArgs..., _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) & noexcept>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = true;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag &>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) const & noexcept>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = true;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag const &>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) && noexcept>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = true;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag &&>, _Args...>;
+    };
+
+    template <class _Return, class... _Args>
+    struct __function_meta<_Return(_Args...) const && noexcept>
+    {
+      using __return_type = _Return;
+
+      static constexpr bool __noexcept = true;
+
+      template <class... _LeadingArgs>
+      using __make_function =
+        __func::__function<_LeadingArgs..., __self_box<__self_tag const &&>, _Args...>;
+    };
+
+    template <class _Ty>
+    using __return_type_t = __function_meta<_Ty>::__return_type;
+
+    template <class _Ty>
+    inline constexpr bool __is_noexcept = __function_meta<_Ty>::__noexcept;
+
+    template <class _Ty>
+    concept __is_function_type = std::is_function_v<_Ty>;
+
+    template <class _Ty>
+    concept __is_sender_tag_function = __is_function_type<_Ty>
+                                    && __same_as<sender_tag, __return_type_t<_Ty>>
+                                    && (!__is_noexcept<_Ty>);
+
+    template <class _Ty>
+    concept __is_not_sender_tag_function = __is_function_type<_Ty>
+                                        && __not_same_as<sender_tag, __return_type_t<_Ty>>;
+
     //! Given a return type and a bool indicating whether the function is noexcept,
     //! compute the appropriate completion_signatures. The result is a set_value overload
     //! taking either Return&& or no args when Return is void, set_stopped, and, when the
@@ -618,6 +774,9 @@ namespace experimental::execution
     using __sigs_from_t = __canonical_t<__concat_completion_signatures_t<
       completion_signatures<__single_value_sig_t<_Return>, set_stopped_t()>,
       __eptr_completion_unless_t<__mbool<_NoExcept>>>>;
+
+    template <class _Ty>
+    using __completion_sigs_from = __sigs_from_t<__return_type_t<_Ty>, __is_noexcept<_Ty>>;
 
     //! maps a completion signature to the default completion domain query
     struct __domain_query_from_sig
@@ -684,157 +843,90 @@ namespace experimental::execution
     template <class...>
     class __make_function;
 
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...)>
+    template <__is_not_sender_tag_function _Signature>
+    class __make_function<_Signature>
     {
-      using __sigs    = __sigs_from_t<_Return, false>;
+      using __sigs    = __completion_sigs_from<_Signature>;
       using __queries = queries<>;
       using __attrs   = __default_attrs<__sigs>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) &>
-      : public __make_function<_Return(__self_box<__self_tag &>, _Args...)>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) const &>
-      : public __make_function<_Return(__self_box<__self_tag const &>, _Args...)>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) &&>
-      : public __make_function<_Return(__self_box<__self_tag &&>, _Args...)>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) const &&>
-      : public __make_function<_Return(__self_box<__self_tag const &&>, _Args...)>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) noexcept>
-    {
-      using __sigs    = __sigs_from_t<_Return, true>;
-      using __queries = queries<>;
-      using __attrs   = __default_attrs<__sigs>;
-
-     public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
-    };
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) & noexcept>
-      : public __make_function<_Return(__self_box<__self_tag &>, _Args...) noexcept>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) const & noexcept>
-      : public __make_function<_Return(__self_box<__self_tag const &>, _Args...) noexcept>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) && noexcept>
-      : public __make_function<_Return(__self_box<__self_tag &&>, _Args...) noexcept>
-    {};
-
-    template <class _Return, class... _Args>
-    class __make_function<_Return(_Args...) const && noexcept>
-      : public __make_function<_Return(__self_box<__self_tag const &&>, _Args...) noexcept>
-    {};
-
-    template <class... _Args, class... _Sigs>
-    class __make_function<sender_tag(_Args...), completion_signatures<_Sigs...>>
+    template <__is_sender_tag_function _Signature, class... _Sigs>
+    class __make_function<_Signature, completion_signatures<_Sigs...>>
     {
       using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
       using __queries = queries<>;
       using __attrs   = __default_attrs<__sigs>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class _Return, class... _Args, class... _Queries>
-    class __make_function<_Return(_Args...), queries<_Queries...>>
+    template <__is_not_sender_tag_function _Signature, class... _Queries>
+    class __make_function<_Signature, queries<_Queries...>>
     {
-      using __sigs    = __sigs_from_t<_Return, false>;
+      using __sigs    = __completion_sigs_from<_Signature>;
       using __queries = __canonical_t<queries<_Queries...>>;
       using __attrs   = __default_attrs<__sigs>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class _Return, class... _Args, class... _Queries>
-    class __make_function<_Return(_Args...) noexcept, queries<_Queries...>>
-    {
-      using __sigs    = __sigs_from_t<_Return, true>;
-      using __queries = __canonical_t<queries<_Queries...>>;
-      using __attrs   = __default_attrs<__sigs>;
-
-     public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
-    };
-
-    template <class... _Args, class... _Sigs, class... _Queries>
-    class __make_function<sender_tag(_Args...),
-                          completion_signatures<_Sigs...>,
-                          queries<_Queries...>>
+    template <__is_sender_tag_function _Signature, class... _Sigs, class... _Queries>
+    class __make_function<_Signature, completion_signatures<_Sigs...>, queries<_Queries...>>
     {
       using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
       using __queries = __canonical_t<queries<_Queries...>>;
       using __attrs   = __default_attrs<__sigs>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class _Return, class... _Args, class... _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<__sigs_from_t<_Return, false>,
-                                                                  attrs<_Attrs...>>
-    class __make_function<_Return(_Args...), attrs<_Attrs...>>
+    template <__is_not_sender_tag_function _Signature, class... _Args, class... _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<
+        __completion_sigs_from<_Signature>,
+        attrs<_Attrs...>>
+    class __make_function<_Signature, attrs<_Attrs...>>
     {
-      using __sigs    = __sigs_from_t<_Return, false>;
+      using __sigs    = __completion_sigs_from<_Signature>;
       using __queries = queries<>;
       using __attrs   = __canonical_t<attrs<_Attrs...>>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class _Return, class... _Args, class... _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<__sigs_from_t<_Return, true>,
-                                                                  attrs<_Attrs...>>
-    class __make_function<_Return(_Args...) noexcept, attrs<_Attrs...>>
-    {
-      using __sigs    = __sigs_from_t<_Return, true>;
-      using __queries = queries<>;
-      using __attrs   = __canonical_t<attrs<_Attrs...>>;
-
-     public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
-    };
-
-    template <class... _Args, class... _Sigs, class... _Attrs>
+    template <__is_sender_tag_function _Signature, class... _Sigs, class... _Attrs>
       requires __completion_signatures_and_domains_are_compatible<completion_signatures<_Sigs...>,
                                                                   attrs<_Attrs...>>
-    class __make_function<sender_tag(_Args...), completion_signatures<_Sigs...>, attrs<_Attrs...>>
+    class __make_function<_Signature, completion_signatures<_Sigs...>, attrs<_Attrs...>>
     {
       using __sigs    = __canonical_t<completion_signatures<_Sigs...>>;
       using __queries = queries<>;
       using __attrs   = __canonical_t<attrs<_Attrs...>>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
 
-    template <class... _Args, class... _Sigs, class... _Queries, class... _Attrs>
+    template <__is_sender_tag_function _Signature,
+              class... _Sigs,
+              class... _Queries,
+              class... _Attrs>
       requires __completion_signatures_and_domains_are_compatible<completion_signatures<_Sigs...>,
                                                                   attrs<_Attrs...>>
-    class __make_function<sender_tag(_Args...),
+    class __make_function<_Signature,
                           completion_signatures<_Sigs...>,
                           queries<_Queries...>,
                           attrs<_Attrs...>>
@@ -844,7 +936,8 @@ namespace experimental::execution
       using __attrs   = __canonical_t<attrs<_Attrs...>>;
 
      public:
-      using type = __function<__sigs, __queries, __attrs, _Args...>;
+      using type =
+        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
   }  // namespace __func
 

@@ -838,4 +838,50 @@ namespace
       REQUIRE(result == 84);
     }
   }
+
+  template <class T>
+  using async_getter =
+    exec::function<ex::sender_tag() const &, ex::completion_signatures<ex::set_value_t(T)>>;
+
+  template <class O, class T>
+  using async_setter =
+    exec::function<ex::sender_tag(T) &, ex::completion_signatures<ex::set_value_t(O &)>>;
+
+  TEST_CASE("specifying more parameters of a function hiding a member function works",
+            "[types][function]")
+  {
+    struct example
+    {
+      async_getter<int> get() const & noexcept
+      {
+        return async_getter<int>(*this, [](auto &self) noexcept { return ex::just(self.i_); });
+      }
+
+      async_setter<example, int> set(int i) & noexcept
+      {
+        return async_setter<example, int>(*this,
+                                          int(i),
+                                          [](auto &self, int i) noexcept
+                                          {
+                                            return ex::just(i)
+                                                 | ex::then(
+                                                     [&self](int i) noexcept -> example &
+                                                     {
+                                                       self.i_ = i;
+                                                       return self;
+                                                     });
+                                          });
+      }
+
+     private:
+      int i_{};
+    };
+
+    example e;
+
+    auto [result] =
+      ex::sync_wait(e.set(42) | ex::let_value([](auto &e) noexcept { return e.get(); })).value();
+
+    REQUIRE(result == 42);
+  }
 }  // namespace
