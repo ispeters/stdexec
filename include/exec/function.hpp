@@ -760,17 +760,14 @@ namespace experimental::execution
     concept __is_not_sender_tag_function = __is_function_type<_Ty>
                                         && __not_same_as<sender_tag, __return_type_t<_Ty>>;
 
-    //! Given a return type and a bool indicating whether the function is noexcept,
-    //! compute the appropriate completion_signatures. The result is a set_value overload
-    //! taking either Return&& or no args when Return is void, set_stopped, and, when the
-    //! function type is not noexcept, set_error(std::exception_ptr)
-    template <class _Return, bool _NoExcept>
-    using __sigs_from_t = __canonical_t<__concat_completion_signatures_t<
-      completion_signatures<__single_value_sig_t<_Return>, set_stopped_t()>,
-      __eptr_completion_unless_t<__mbool<_NoExcept>>>>;
-
+    //! Given a function type compute the appropriate completion_signatures. The result is
+    //! a set_value overload taking either Return&& or no args when Return is void,
+    //! set_stopped, and, when the function type is not noexcept,
+    //! set_error(std::exception_ptr)
     template <class _Ty>
-    using __completion_sigs_from = __sigs_from_t<__return_type_t<_Ty>, __is_noexcept<_Ty>>;
+    using __completion_sigs_from = __canonical_t<__concat_completion_signatures_t<
+      completion_signatures<__single_value_sig_t<__return_type_t<_Ty>>, set_stopped_t()>,
+      __eptr_completion_unless_t<__mbool<__is_noexcept<_Ty>>>>>;
 
     //! maps a completion signature to the default completion domain query
     struct __domain_query_from_sig
