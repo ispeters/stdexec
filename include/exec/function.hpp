@@ -841,28 +841,30 @@ namespace experimental::execution
     //! The order of Args... is obviously important, but Sigs..., Queries..., and Attrs...
     //! are all canonicalized into a sorted and uniqued list to ensure order is irrelevant.
     template <class...>
-    class __make_function;
+    struct __make_function;
+
+    //! Handle the cases where the given function signature matches
+    //!
+    //!  Return(Args...) noexcept(???)
+    //!
+    //! Note that none of these specializations accept a fully-specified completion
+    //! signatures since they are derived from _Signature.
 
     template <__is_not_sender_tag_function _Signature>
-    class __make_function<_Signature>
-      : public __make_function<_Signature,
-                               queries<>,
-                               __default_attrs<__completion_sigs_from<_Signature>>>
+    struct __make_function<_Signature>
+      : __make_function<_Signature, queries<>, __default_attrs<__completion_sigs_from<_Signature>>>
     {};
 
     template <__is_not_sender_tag_function _Signature, __is_instance_of<queries> _Queries>
-    class __make_function<_Signature, _Queries>
-      : public __make_function<_Signature,
-                               _Queries,
-                               __default_attrs<__completion_sigs_from<_Signature>>>
+    struct __make_function<_Signature, _Queries>
+      : __make_function<_Signature, _Queries, __default_attrs<__completion_sigs_from<_Signature>>>
     {};
 
     template <__is_not_sender_tag_function _Signature, __is_instance_of<attrs> _Attrs>
       requires __completion_signatures_and_domains_are_compatible<
         __completion_sigs_from<_Signature>,
         _Attrs>
-    class __make_function<_Signature, _Attrs>
-      : public __make_function<_Signature, queries<>, _Attrs>
+    struct __make_function<_Signature, _Attrs> : __make_function<_Signature, queries<>, _Attrs>
     {};
 
     template <__is_not_sender_tag_function _Signature,
@@ -871,52 +873,52 @@ namespace experimental::execution
       requires __completion_signatures_and_domains_are_compatible<
         __completion_sigs_from<_Signature>,
         _Attrs>
-    class __make_function<_Signature, _Queries, _Attrs>
+    struct __make_function<_Signature, _Queries, _Attrs>
     {
-      using __sigs    = __completion_sigs_from<_Signature>;
-      using __queries = __canonical_t<_Queries>;
-      using __attrs   = __canonical_t<_Attrs>;
-
-     public:
       using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
+        __function_meta<_Signature>::template __make_function<__completion_sigs_from<_Signature>,
+                                                              __canonical_t<_Queries>,
+                                                              __canonical_t<_Attrs>>;
     };
+
+    //! Handle the cases where the given function signature matches
+    //!
+    //!  sender_tag(Args...)
+    //!
+    //! Note that all these specializations require fully-specified completion signatures
+    //! since they can't be derived from _Signature.
 
     template <__is_sender_tag_function                _Signature,
               __is_instance_of<completion_signatures> _ComplSigs>
-    class __make_function<_Signature, _ComplSigs>
-      : public __make_function<_Signature, _ComplSigs, queries<>, __default_attrs<_ComplSigs>>
+    struct __make_function<_Signature, _ComplSigs>
+      : __make_function<_Signature, _ComplSigs, queries<>, __default_attrs<_ComplSigs>>
     {};
 
     template <__is_sender_tag_function                _Signature,
               __is_instance_of<completion_signatures> _ComplSigs,
               __is_instance_of<queries>               _Queries>
-    class __make_function<_Signature, _ComplSigs, _Queries>
-      : public __make_function<_Signature, _ComplSigs, _Queries, __default_attrs<_ComplSigs>>
+    struct __make_function<_Signature, _ComplSigs, _Queries>
+      : __make_function<_Signature, _ComplSigs, _Queries, __default_attrs<_ComplSigs>>
     {};
 
     template <__is_sender_tag_function                _Signature,
               __is_instance_of<completion_signatures> _ComplSigs,
               __is_instance_of<attrs>                 _Attrs>
       requires __completion_signatures_and_domains_are_compatible<_ComplSigs, _Attrs>
-    class __make_function<_Signature, _ComplSigs, _Attrs>
-      : public __make_function<_Signature, _ComplSigs, queries<>, _Attrs>
+    struct __make_function<_Signature, _ComplSigs, _Attrs>
+      : __make_function<_Signature, _ComplSigs, queries<>, _Attrs>
     {};
 
     template <__is_sender_tag_function                _Signature,
-              __is_instance_of<completion_signatures> _Sigs,
+              __is_instance_of<completion_signatures> _ComplSigs,
               __is_instance_of<queries>               _Queries,
               __is_instance_of<attrs>                 _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<_Sigs, _Attrs>
-    class __make_function<_Signature, _Sigs, _Queries, _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<_ComplSigs, _Attrs>
+    struct __make_function<_Signature, _ComplSigs, _Queries, _Attrs>
     {
-      using __sigs    = __canonical_t<_Sigs>;
-      using __queries = __canonical_t<_Queries>;
-      using __attrs   = __canonical_t<_Attrs>;
-
-     public:
-      using type =
-        __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
+      using type = __function_meta<_Signature>::template __make_function<__canonical_t<_ComplSigs>,
+                                                                         __canonical_t<_Queries>,
+                                                                         __canonical_t<_Attrs>>;
     };
   }  // namespace __func
 
