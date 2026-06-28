@@ -834,7 +834,7 @@ namespace experimental::execution
     //!
     //! The order of Args... is obviously important, but Sigs..., Queries..., and Attrs...
     //! are all canonicalized into a sorted and uniqued list to ensure order is irrelevant.
-    template <class...>
+    template <__is_function_type, class...>
     struct __make_function;
 
     //! Handle the cases where the given function signature matches
@@ -937,8 +937,8 @@ namespace experimental::execution
   //! Future: support C-style ellipsis arguments in the function signature to permit
   //! type-erased arguments as well, like function<int(bar, baz, ...)> (a fallible
   //! function from (bar, baz) plus unspecified, erased additional arguments to int)
-  template <class... _Ts>
-  using function = __func::__make_function<_Ts...>::type;
+  template <__func::__is_function_type _Signature, class... _Ts>
+  using function = __func::__make_function<_Signature, _Ts...>::type;
 }  // namespace experimental::execution
 
 namespace exec = experimental::execution;
