@@ -850,24 +850,11 @@ namespace experimental::execution
                                __default_attrs<__completion_sigs_from<_Signature>>>
     {};
 
-    template <__is_sender_tag_function                _Signature,
-              __is_instance_of<completion_signatures> _ComplSigs>
-    class __make_function<_Signature, _ComplSigs>
-      : public __make_function<_Signature, _ComplSigs, queries<>, __default_attrs<_ComplSigs>>
-    {};
-
     template <__is_not_sender_tag_function _Signature, __is_instance_of<queries> _Queries>
     class __make_function<_Signature, _Queries>
       : public __make_function<_Signature,
                                _Queries,
                                __default_attrs<__completion_sigs_from<_Signature>>>
-    {};
-
-    template <__is_sender_tag_function                _Signature,
-              __is_instance_of<completion_signatures> _ComplSigs,
-              __is_instance_of<queries>               _Queries>
-    class __make_function<_Signature, _ComplSigs, _Queries>
-      : public __make_function<_Signature, _ComplSigs, _Queries, __default_attrs<_ComplSigs>>
     {};
 
     template <__is_not_sender_tag_function _Signature, __is_instance_of<attrs> _Attrs>
@@ -876,14 +863,6 @@ namespace experimental::execution
         _Attrs>
     class __make_function<_Signature, _Attrs>
       : public __make_function<_Signature, queries<>, _Attrs>
-    {};
-
-    template <__is_sender_tag_function                _Signature,
-              __is_instance_of<completion_signatures> _ComplSigs,
-              __is_instance_of<attrs>                 _Attrs>
-      requires __completion_signatures_and_domains_are_compatible<_ComplSigs, _Attrs>
-    class __make_function<_Signature, _ComplSigs, _Attrs>
-      : public __make_function<_Signature, _ComplSigs, queries<>, _Attrs>
     {};
 
     template <__is_not_sender_tag_function _Signature,
@@ -902,6 +881,27 @@ namespace experimental::execution
       using type =
         __function_meta<_Signature>::template __make_function<__sigs, __queries, __attrs>;
     };
+
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs>
+    class __make_function<_Signature, _ComplSigs>
+      : public __make_function<_Signature, _ComplSigs, queries<>, __default_attrs<_ComplSigs>>
+    {};
+
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs,
+              __is_instance_of<queries>               _Queries>
+    class __make_function<_Signature, _ComplSigs, _Queries>
+      : public __make_function<_Signature, _ComplSigs, _Queries, __default_attrs<_ComplSigs>>
+    {};
+
+    template <__is_sender_tag_function                _Signature,
+              __is_instance_of<completion_signatures> _ComplSigs,
+              __is_instance_of<attrs>                 _Attrs>
+      requires __completion_signatures_and_domains_are_compatible<_ComplSigs, _Attrs>
+    class __make_function<_Signature, _ComplSigs, _Attrs>
+      : public __make_function<_Signature, _ComplSigs, queries<>, _Attrs>
+    {};
 
     template <__is_sender_tag_function                _Signature,
               __is_instance_of<completion_signatures> _Sigs,
