@@ -232,7 +232,7 @@ namespace STDEXEC
       }
     };
 
-  STDEXEC_MODULE_EXPORT_AUTHORING
+    STDEXEC_MODULE_EXPORT_AUTHORING
     template <class _Fun>
     struct __as_bulk_chunked_fn
     {
@@ -587,4 +587,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #  include "__epilogue.hpp"
-#endif // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
