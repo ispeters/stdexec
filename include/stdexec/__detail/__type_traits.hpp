@@ -98,18 +98,21 @@ namespace STDEXEC
     using __f = _Tp;
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   struct __cpc
   {
     template <class _Tp>
     using __f = _Tp const;
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   struct __cplr
   {
     template <class _Tp>
     using __f = _Tp &;
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   struct __cprr
   {
     template <class _Tp>
@@ -123,6 +126,7 @@ namespace STDEXEC
     using __f = _Tp const &;
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   struct __cpcrr
   {
     template <class _Tp>
