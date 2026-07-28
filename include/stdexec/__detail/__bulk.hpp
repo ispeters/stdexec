@@ -232,6 +232,7 @@ namespace STDEXEC
       }
     };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
     template <class _Fun>
     struct __as_bulk_chunked_fn
     {

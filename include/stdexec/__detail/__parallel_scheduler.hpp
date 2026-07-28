@@ -88,6 +88,7 @@ namespace STDEXEC
     using __sender_data_t = decltype(STDEXEC::sync_wait(std::declval<_Sender>()).value());
   }  // namespace __detail
 
+  STDEXEC_MODULE_EXPORT
   class parallel_scheduler;
   class __parallel_sender;
 
@@ -95,6 +96,7 @@ namespace STDEXEC
   class __parallel_bulk_sender;
 
   /// Returns a scheduler that can add work to the underlying execution context.
+  STDEXEC_MODULE_EXPORT
   auto get_parallel_scheduler() -> parallel_scheduler;
 
   /// Concept that matches `bulk_chunked` and `bulk_unchunked` senders.

@@ -275,6 +275,7 @@ namespace STDEXEC
 
   ////////////////////////////////////////////////////////////////////////////////
   // STDEXEC::task
+  STDEXEC_MODULE_EXPORT
   template <class _Ty = void, class _TaskEnv = env<>>
   class [[nodiscard]] task
   {

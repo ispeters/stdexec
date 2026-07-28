@@ -130,7 +130,7 @@ namespace experimental::execution
 
       template <__decays_to<__when_empty_sender> _Self, class... _Env>
       static consteval auto get_completion_signatures()
-        -> __completion_signatures_of_t<__copy_cvref_t<_Self, _Constrained>, __env_t<_Env>...>
+        -> completion_signatures_of_t<__copy_cvref_t<_Self, _Constrained>, __env_t<_Env>...>
       {
         return {};
       }
@@ -256,7 +256,7 @@ namespace experimental::execution
 
       template <__decays_to<__nest_sender> _Self, class... _Env>
       static consteval auto get_completion_signatures()
-        -> __completion_signatures_of_t<__copy_cvref_t<_Self, _Constrained>, __env_t<_Env>...>
+        -> completion_signatures_of_t<__copy_cvref_t<_Self, _Constrained>, __env_t<_Env>...>
       {
         return {};
       }

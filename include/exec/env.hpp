@@ -15,7 +15,13 @@
  */
 #pragma once
 
+#include "../stdexec/__detail/__config.hpp"
+
+#if STDEXEC_USE_MODULES()
+import stdexec;
+#else
 #include "../stdexec/execution.hpp"
+#endif
 
 STDEXEC_PRAGMA_PUSH()
 STDEXEC_PRAGMA_IGNORE_EDG(1302)
@@ -229,7 +235,7 @@ namespace experimental::execution
 
       template <__decays_to<__sender> _Self, class... _Env>
       static consteval auto get_completion_signatures()
-        -> __completion_signatures_of_t<__copy_cvref_t<_Self, _Sender>, _Env...>
+        -> completion_signatures_of_t<__copy_cvref_t<_Self, _Sender>, _Env...>
       {
         return {};
       }
