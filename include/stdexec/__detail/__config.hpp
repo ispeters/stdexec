@@ -925,7 +925,7 @@ namespace STDEXEC
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#if !defined(STDEXEC_DEMANGLE_SENDER_NAMES) && STDEXEC_MSVC()
+#if !defined(STDEXEC_DEMANGLE_SENDER_NAMES) && (STDEXEC_MSVC() || STDEXEC_USE_MODULES())
 #  define STDEXEC_DEMANGLE_SENDER_NAMES
 #endif
 
