@@ -454,7 +454,7 @@ namespace STDEXEC
   //! **Example.**
   //!
   //! @code{.cpp}
-  //! #  include <stdexec/execution.hpp>
+  //! #include <stdexec/execution.hpp>
   //!
   //! int main() {
   //!   using namespace stdexec;
