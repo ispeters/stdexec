@@ -663,3 +663,5 @@ if(STDEXEC_INSTALL)
     FINAL_CODE_BLOCK
     code_string)
 endif()
+
+add_subdirectory(repro)
