@@ -255,6 +255,40 @@ namespace STDEXEC
       template <class _Tuple>
       using __impl_t = __impl<__copy_cvref_fn<_Tuple>>;
 
+      // Fast-path overloads for the empty-tuple case, dispatched by *type*
+      // (an exact, non-dependent match against __tuple<> in each
+      // cvref-qualified form) rather than by querying `_Tuple::__size`.
+      // See git history for the diagnostic trail on why this exists.
+      STDEXEC_EXEC_CHECK_DISABLE
+      template <class _Fn, class... _Us>
+        requires __callable<_Fn, _Us...>
+      STDEXEC_ATTRIBUTE(always_inline, host, device)
+      constexpr auto operator()(_Fn&& __fn, __tuple<>&&, _Us&&... __us) const
+        noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
+      {
+        return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
+      }
+
+      STDEXEC_EXEC_CHECK_DISABLE
+      template <class _Fn, class... _Us>
+        requires __callable<_Fn, _Us...>
+      STDEXEC_ATTRIBUTE(always_inline, host, device)
+      constexpr auto operator()(_Fn&& __fn, __tuple<>&, _Us&&... __us) const
+        noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
+      {
+        return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
+      }
+
+      STDEXEC_EXEC_CHECK_DISABLE
+      template <class _Fn, class... _Us>
+        requires __callable<_Fn, _Us...>
+      STDEXEC_ATTRIBUTE(always_inline, host, device)
+      constexpr auto operator()(_Fn&& __fn, const __tuple<>&, _Us&&... __us) const
+        noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
+      {
+        return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
+      }
+
       STDEXEC_EXEC_CHECK_DISABLE
       template <class _Fn, class _Tuple, class... _Us>
         requires __callable<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>
