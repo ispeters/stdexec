@@ -192,6 +192,7 @@ namespace STDEXEC
     };
   }  // namespace __invoke_
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   inline constexpr __invoke_::__invoke_t __invoke{};
 
   template <class _Fun, class... _As>

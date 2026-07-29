@@ -278,6 +278,24 @@ else()
     target_compile_features(stdexec ${stdexec_scope} cxx_std_20)
 endif()
 
+if(STDEXEC_BUILD_MODULES)
+  # Clang 22 defaults to "Reduced BMI" mode, which strips declarations and
+  # definitions from a module's interface that aren't referenced from
+  # *within* the module's own compilation (see
+  # https://clang.llvm.org/docs/StandardCPlusPlusModules.html#reduced-bmi).
+  # stdexec's headers define plenty of machinery -- explicit
+  # specializations, member function overloads -- that's only ever
+  # instantiated from *consuming* translation units (tests, user code),
+  # never from within stdexec.cppm/execution.hpp itself. That's exactly
+  # what Reduced BMI is documented to prune, and manifests downstream as
+  # spurious "no matching function"/"has no members" errors deep in
+  # template instantiation. Disable it until each affected entity has an
+  # explicit `using` reference forcing reachability, per Clang's
+  # documented workaround.
+  target_compile_options(stdexec ${stdexec_scope}
+    $<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fno-modules-reduced-bmi>)
+endif()
+
 # # Enable GPU compilation when using NVHPC compiler
 # target_compile_options(stdexec INTERFACE
 # $<$<COMPILE_LANG_AND_ID:CXX,NVHPC>:-stdpar=gpu> ) target_link_options(stdexec

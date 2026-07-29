@@ -324,6 +324,7 @@ namespace STDEXEC
   STDEXEC_MODULE_EXPORT_AUTHORING
   using __tup::__tuple;
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   inline constexpr __tup::__apply_t __apply{};
 
   STDEXEC_MODULE_EXPORT_AUTHORING
@@ -500,6 +501,7 @@ namespace STDEXEC
     };
   }  // namespace __tup
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   inline constexpr __tup::__cat_apply_t __cat_apply{};
 
   //
