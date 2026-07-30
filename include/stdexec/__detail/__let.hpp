@@ -258,7 +258,20 @@ namespace STDEXEC
       __opstate_base<_SetTag, _Fun, _Receiver, _Env2, _Tuples...>* __state_;
     };
 
-    constexpr auto __mk_result_sndr =
+    // NB: `inline` is load-bearing. Without it, this namespace-scope
+    // `constexpr` variable has *internal linkage* ([basic.link]/3: a
+    // non-template const variable at namespace scope that is neither
+    // `extern` nor `inline`), which means every translation unit gets its
+    // own object -- and, critically, its own distinct closure type for the
+    // lambda below. Closure types are never re-derivable: two lambdas from
+    // the same source line in two TUs are different types. That's an ODR
+    // hazard in the header-only build, and under C++20 modules it's worse:
+    // the entity isn't exported, so a consumer instantiating
+    // `__start_next_fn`'s body (which calls `__apply(__mk_result_sndr, ...)`)
+    // can end up naming a different closure type than the one baked into
+    // the BMI. Cf. the neighbouring `__start_next_fn`, which is correctly
+    // `inline`.
+    inline constexpr auto __mk_result_sndr =
       []<class _Fun, class... _Args>(_Fun& __fn, _Args&... __args) noexcept(
         __nothrow_invocable<_Fun, _Args&...>) -> decltype(auto)
     {
