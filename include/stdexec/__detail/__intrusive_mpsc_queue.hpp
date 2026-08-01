@@ -19,7 +19,8 @@
 // general design of this MPSC queue is taken from
 // https://www.1024cores.net/home/lock-free-algorithms/queues/intrusive-mpsc-node-based-queue
 
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___INTRUSIVE_MPSC_QUEUE_HPP
+#define INCLUDE_STDEXEC___DETAIL___INTRUSIVE_MPSC_QUEUE_HPP
 
 #include "__atomic.hpp"
 
@@ -108,3 +109,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #include "__epilogue.hpp"
+#endif  // INCLUDE_STDEXEC___DETAIL___INTRUSIVE_MPSC_QUEUE_HPP

@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___CONCEPTS_HPP
+#define INCLUDE_STDEXEC___DETAIL___CONCEPTS_HPP
 
 #if __cpp_concepts < 201907L
 #  error This library requires support for C++20 concepts
@@ -380,3 +381,4 @@ namespace STDEXEC
 
 #  include "__epilogue.hpp"
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___CONCEPTS_HPP

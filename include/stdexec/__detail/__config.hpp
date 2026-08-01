@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___CONFIG_HPP
+#define INCLUDE_STDEXEC___DETAIL___CONFIG_HPP
 
 // IWYU pragma: always_keep
 
@@ -969,3 +970,4 @@ namespace STDEXEC
   namespace parallel_scheduler_replacement
   {}
 }  // namespace STDEXEC
+#endif  // INCLUDE_STDEXEC___DETAIL___CONFIG_HPP

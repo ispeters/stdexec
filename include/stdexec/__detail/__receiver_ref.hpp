@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___RECEIVER_REF_HPP
+#define INCLUDE_STDEXEC___DETAIL___RECEIVER_REF_HPP
 
 #include "__concepts.hpp"
 #include "__config.hpp"
@@ -106,3 +107,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #include "__epilogue.hpp"
+#endif  // INCLUDE_STDEXEC___DETAIL___RECEIVER_REF_HPP

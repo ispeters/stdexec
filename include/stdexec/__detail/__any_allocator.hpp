@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___ANY_ALLOCATOR_HPP
+#define INCLUDE_STDEXEC___DETAIL___ANY_ALLOCATOR_HPP
 
 #include "__config.hpp"
 
@@ -135,3 +136,4 @@ namespace STDEXEC
 
 #  include "__epilogue.hpp"
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___ANY_ALLOCATOR_HPP

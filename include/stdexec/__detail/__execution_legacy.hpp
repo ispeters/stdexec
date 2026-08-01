@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___EXECUTION_LEGACY_HPP
+#define INCLUDE_STDEXEC___DETAIL___EXECUTION_LEGACY_HPP
 
 #include "__config.hpp"
 
@@ -110,3 +111,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #include "__epilogue.hpp"
+#endif  // INCLUDE_STDEXEC___DETAIL___EXECUTION_LEGACY_HPP

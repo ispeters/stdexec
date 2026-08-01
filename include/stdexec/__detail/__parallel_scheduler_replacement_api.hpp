@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_REPLACEMENT_API_HPP
+#define INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_REPLACEMENT_API_HPP
 
 #include "__config.hpp"
 
@@ -56,3 +57,4 @@ namespace STDEXEC::parallel_scheduler_replacement
 
 #  include "__epilogue.hpp"
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_REPLACEMENT_API_HPP

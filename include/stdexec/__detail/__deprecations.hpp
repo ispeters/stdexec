@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___DEPRECATIONS_HPP
+#define INCLUDE_STDEXEC___DETAIL___DEPRECATIONS_HPP
 
 #include "__execution_fwd.hpp"
 #include "__ranges.hpp"  // IWYU pragma: keep
@@ -95,3 +96,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #include "__epilogue.hpp"
+#endif  // INCLUDE_STDEXEC___DETAIL___DEPRECATIONS_HPP

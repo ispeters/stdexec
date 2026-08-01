@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_HPP
+#define INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_HPP
 
 #include "__config.hpp"
 
@@ -832,3 +833,4 @@ namespace STDEXEC
 #    include "__parallel_scheduler_default_impl_entry.hpp"
 #  endif
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_HPP

@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___SPAWN_COMMON_HPP
+#define INCLUDE_STDEXEC___DETAIL___SPAWN_COMMON_HPP
 
 #include "__config.hpp"
 
@@ -106,3 +107,4 @@ namespace STDEXEC::__spawn_common
 
 #  include "__epilogue.hpp"
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___SPAWN_COMMON_HPP

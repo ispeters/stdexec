@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___BASIC_SENDER_MACROS_HPP
+#define INCLUDE_STDEXEC___DETAIL___BASIC_SENDER_MACROS_HPP
 
 #include "__config.hpp"
 
@@ -27,3 +28,4 @@
 #  define STDEXEC_SEXPR_DESCRIPTOR(_Tag, _Data, _Child)                                          \
     STDEXEC::__descriptor_fn_v<STDEXEC::__desc<_Tag, _Data, _Child>>
 #endif
+#endif  // INCLUDE_STDEXEC___DETAIL___BASIC_SENDER_MACROS_HPP

@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___SPIN_LOOP_PAUSE_HPP
+#define INCLUDE_STDEXEC___DETAIL___SPIN_LOOP_PAUSE_HPP
 
 #include "__config.hpp"
 
@@ -70,3 +71,4 @@ namespace STDEXEC
 }  // namespace STDEXEC
 #  endif
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___SPIN_LOOP_PAUSE_HPP

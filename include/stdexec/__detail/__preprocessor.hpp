@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___PREPROCESSOR_HPP
+#define INCLUDE_STDEXEC___DETAIL___PREPROCESSOR_HPP
 
 #define STDEXEC_PP_STRINGIZE_I(...) #__VA_ARGS__
 #define STDEXEC_PP_STRINGIZE(...)   STDEXEC_PP_STRINGIZE_I(__VA_ARGS__)
@@ -131,3 +132,4 @@
 #define STDEXEC_PP_REPEAT_10(_MACRO, ...)                                                          \
   STDEXEC_PP_REPEAT_9(_MACRO, __VA_ARGS__) _MACRO(9 __VA_OPT__(, ) __VA_ARGS__)
 #define STDEXEC_PP_REPEAT(_N, _MACRO, ...) STDEXEC_PP_REPEAT_I(_N, _MACRO, __VA_ARGS__)
+#endif  // INCLUDE_STDEXEC___DETAIL___PREPROCESSOR_HPP

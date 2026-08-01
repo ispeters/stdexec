@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___DIAGNOSTIC_MACROS_HPP
+#define INCLUDE_STDEXEC___DETAIL___DIAGNOSTIC_MACROS_HPP
 
 // ensure consumers have STDEXEC and STDEXEC_PP_STRINGIZE
 #include "__config.hpp"
@@ -181,3 +182,4 @@
   "'connect'\n"                                                                                    \
   "member function that accepts sync_wait's receiver.\n"                                           \
   STDEXEC_ERROR_CANNOT_CONNECT_SENDER_TO_RECEIVER
+#endif  // INCLUDE_STDEXEC___DETAIL___DIAGNOSTIC_MACROS_HPP

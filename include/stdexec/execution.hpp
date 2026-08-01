@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC_EXECUTION_HPP
+#define INCLUDE_STDEXEC_EXECUTION_HPP
 
 #include "__detail/__config.hpp"
 
@@ -94,3 +95,4 @@ template <STDEXEC::sender _Ignore, STDEXEC::sender _Sender>
 auto operator|(_Ignore&&, _Sender&&) noexcept;
 
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC_EXECUTION_HPP

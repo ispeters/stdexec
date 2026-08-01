@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC_COROUTINE_HPP
+#define INCLUDE_STDEXEC_COROUTINE_HPP
 
 #include "__detail/__config.hpp"
 
@@ -336,3 +337,4 @@ namespace STDEXEC
 
 #  endif  // !STDEXEC_NO_STDCPP_COROUTINES()
 #endif    // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC_COROUTINE_HPP

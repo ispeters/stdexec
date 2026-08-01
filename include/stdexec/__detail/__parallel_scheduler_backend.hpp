@@ -23,7 +23,8 @@ import stdexec;
 
 #else
 
-#  pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_BACKEND_HPP
+#define INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_BACKEND_HPP
 
 #  include "__execution_fwd.hpp"
 
@@ -422,4 +423,5 @@ namespace STDEXEC
 }  // namespace STDEXEC
 
 #  include "__epilogue.hpp"
+#endif  // INCLUDE_STDEXEC___DETAIL___PARALLEL_SCHEDULER_BACKEND_HPP
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)

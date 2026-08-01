@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___MANUAL_LIFETIME_HPP
+#define INCLUDE_STDEXEC___DETAIL___MANUAL_LIFETIME_HPP
 
 #include "__config.hpp"
 
@@ -189,3 +190,4 @@ namespace STDEXEC
 
 #  include "__epilogue.hpp"
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___MANUAL_LIFETIME_HPP

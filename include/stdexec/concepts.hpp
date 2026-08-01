@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC_CONCEPTS_HPP
+#define INCLUDE_STDEXEC_CONCEPTS_HPP
 
 #include "__detail/__concepts.hpp"  // IWYU pragma: export
+#endif  // INCLUDE_STDEXEC_CONCEPTS_HPP

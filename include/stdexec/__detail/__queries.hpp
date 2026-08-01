@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef INCLUDE_STDEXEC___DETAIL___QUERIES_HPP
+#define INCLUDE_STDEXEC___DETAIL___QUERIES_HPP
 
 #include "__config.hpp"
 
@@ -116,3 +117,4 @@ STDEXEC_P2300_NAMESPACE_BEGIN()
   inline constexpr get_allocator_t get_allocator{};
 STDEXEC_P2300_NAMESPACE_END()
 #endif  // !STDEXEC_USE_MODULES() || defined(STDEXEC_IN_MODULE_PURVIEW)
+#endif  // INCLUDE_STDEXEC___DETAIL___QUERIES_HPP
