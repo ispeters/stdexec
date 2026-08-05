@@ -206,6 +206,7 @@ namespace STDEXEC
     { __invoke(static_cast<_Fun &&>(__f), static_cast<_As &&>(__as)...) } noexcept;
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   template <class _Fun, class... _As>
   using __invoke_result_t = decltype(__invoke(__declval<_Fun>(), __declval<_As>()...));
 

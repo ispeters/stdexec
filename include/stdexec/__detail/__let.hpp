@@ -272,6 +272,7 @@ namespace STDEXEC
     // can end up naming a different closure type than the one baked into
     // the BMI. Cf. the neighbouring `__start_next_fn`, which is correctly
     // `inline`.
+    STDEXEC_MODULE_EXPORT_AUTHORING
     inline constexpr auto __mk_result_sndr =
       []<class _Fun, class... _Args>(_Fun& __fn, _Args&... __args) noexcept(
         __nothrow_invocable<_Fun, _Args&...>) -> decltype(auto)
@@ -279,6 +280,7 @@ namespace STDEXEC
       return STDEXEC::__invoke(static_cast<_Fun&&>(__fn), __args...);
     };
 
+    STDEXEC_MODULE_EXPORT_AUTHORING
     inline constexpr auto __start_next_fn =
       []<class _Fun, class _Receiver, class _Env2, class _Storage, class _Tuple>(
         _Fun&      __fn,
@@ -300,6 +302,7 @@ namespace STDEXEC
 
     //! The core of the operation state for `let_*`.
     //! This gets bundled up into a larger operation state (`__detail::__op_state<...>`).
+    STDEXEC_MODULE_EXPORT_AUTHORING
     template <class _SetTag, class _CvChild, class _Fun, class _Receiver, class... _Tuples>
     struct __opstate final
       : __opstate_base<_SetTag,
