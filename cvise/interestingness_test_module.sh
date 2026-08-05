@@ -21,64 +21,50 @@
 # copied into that isolated directory, so those must be absolute paths --
 # see TEST_SRC's default in compile_module_and_test.sh.
 #
-# SOURCE-LEVEL GUARDS: the reduction has now converged on the same
-# degenerate false positive TWICE -- shrinking __apply_t::__impl's
-# operator() down to a zero-parameter, unconditionally-uncallable overload
-# (`template <__callable> void operator()();`), which reprints matching
-# diagnostic text without exercising the real cvref/tuple-identity
-# mechanism at all. A previous line-window-based grep for this missed it
-# once already because it's sensitive to exactly how many lines of
-# whitespace/formatting sit between `struct __impl` and the declaration --
-# so this version extracts the __impl struct's FULL body via brace-depth
-# tracking (immune to reformatting) and checks it directly:
-#   - BLACKLIST: reject if that body contains `operator()()` (whitespace
-#     stripped first, so no formatting trick can hide it)
-#   - WHITELIST: require that body still mentions `_Tuple` at all -- the
-#     real overload cannot exist without deducing something tuple-shaped,
-#     so its total absence is itself suspicious regardless of the exact
-#     shape cvise arrived at.
+# GUARDS ARE NOW COMPILER-ENFORCED, NOT TEXTUAL. Earlier revisions tried to
+# reject degenerate reductions by grepping the candidate module's source for
+# the shape of __apply_t::__impl. That approach failed twice and for two
+# compounding reasons: (1) `/struct __impl/` matches `struct __impls` in
+# namespace __let, which appears earlier in the file, so the awk extracted the
+# wrong struct entirely; and (2) __apply_t lives in __tuple.hpp, which is not
+# in the reduction target at all, so there was never anything to find.
+#
+# All of that is now handled by static_asserts in the FIXED test file, which
+# cvise cannot edit. If cvise damages the machinery the bug depends on, one of
+# those asserts fails, becomes the first `: error:` in the output, and the
+# line-anchored signature check below rejects the candidate automatically --
+# no extra logic needed here. The compiler decides what "still meaningful"
+# means, rather than an awk script guessing at source shape.
+#
+# TRIGGER: the failure is now provoked by `static_assert(sizeof(opstate2) > 0)`
+# rather than by a call to connect(). Completing that class instantiates the
+# virtual override __start_next (Clang instantiates virtual bodies at
+# class-completion time even under -fsyntax-only), which is a far shorter
+# instantiation chain -- the whole connect/__sexpr/transform_sender_t subtree
+# no longer has to survive reduction.
 
 set -uo pipefail
 
 MODULE_SRC="stdexec.flattened.cppm"
 COMPILE="/tmp/reduce-module/compile_module_and_test.sh"
 
+# SIGNATURE is location-free and stays valid wherever the module code lives.
 SIGNATURE="no matching function for call to object of type 'stdexec::__tup::__apply_t::__impl<stdexec::__cplr>'"
-SIGNATURE2="/tmp/reduce-module/test_stopped_as_error.cpp:100:31: note: while substituting deduced template arguments"
-SIGNATURE3="100 |     auto op = stdexec::connect(snd, rcvr{});"
 
-# --- Extract the __impl struct's full body via brace-depth tracking.
-impl_body=$(awk '
-  /struct __impl/ { capturing=1 }
-  capturing {
-    print
-    opens  = gsub(/{/, "{")
-    closes = gsub(/}/, "}")
-    depth += opens - closes
-    if (depth <= 0 && (opens + closes) > 0) { exit }
-  }
-' "$MODULE_SRC" 2>/dev/null)
+# SIGNATURE2/3 anchor to the FIXED test file, never to the module. The primary
+# error's own file/line migrates as headers get inlined into the flattened
+# module between rounds (it was __let.hpp:292 at last check, and moves into
+# stdexec.flattened.cppm once __let.hpp is inlined) -- anchoring there would
+# silently stop matching at exactly that transition, which looks like cvise
+# mysteriously stalling rather than like a broken test.
+SIGNATURE2="/tmp/reduce-module/test_stopped_as_error.cpp:117:17: note: in instantiation of member function"
+SIGNATURE3="117 |   static_assert(sizeof(opstate2) > 0);"
 
-# --- Guard A (blacklist): reject the known degenerate zero-parameter shape,
-# checked with all whitespace stripped so no reformatting can dodge it.
-impl_body_nowhitespace=$(printf '%s' "$impl_body" | tr -d '[:space:]')
-if printf '%s' "$impl_body_nowhitespace" | grep -qF 'operator()()'; then
-  #echo "Guard A failed"
-  true #exit 1
-fi
-
-# --- Guard B (whitelist): require the block still mentions __tuple_t --
-# the alias defined *inside* __impl itself (`template <class... _Ts> using
-# __tuple_t = __mcall1<_CvRef, __tuple<_Ts...>>;`) that the real deduction
-# mechanism depends on. NOTE: an earlier version of this guard checked for
-# "_Tuple" instead, but that identifier only appears OUTSIDE __impl (in the
-# outer __apply_t::operator() and the __impl_t alias) -- it was never
-# present inside __impl's own body even in genuine, unreduced source, so
-# that version of the guard rejected everything unconditionally.
-if ! printf '%s' "$impl_body" | grep -qF '__tuple_t'; then
-  #echo "Guard B failed"
-  true #exit 1
-fi
+# SIGNATURE4 is semantic rather than positional: it pins that the class being
+# completed is the EMPTY-tuple opstate and that __start_next is what is being
+# instantiated. Immune to file moves and to cvise reformatting, and it rejects
+# any route to the diagnostic that doesn't go through the empty-tuple opstate.
+SIGNATURE4="stdexec::__tup::__tuple<>>::__start_next"
 
 out=$("$COMPILE" "$MODULE_SRC" 2>&1)
 status=$?
@@ -112,22 +98,16 @@ first_error_block=$(printf '%s\n' "$out" | awk '
   n==2       { exit }
 ')
 
-if printf '%s' "$first_error_block" | grep -qF "$SIGNATURE"; then
-  if printf '%s' "$first_error_block" | grep -qF "$SIGNATURE2"; then
-    if printf '%s' "$first_error_block" | grep -qF "$SIGNATURE3"; then
-      #echo "All three signatures matched"
-      exit 0
-    else
-      #echo "Signature 3 didn't match"
-      exit 1
-    fi
-  else
-    #echo "Signature 2 didn't match"
+# Every signature must appear in that block. Flattened to a loop now that
+# there are four of them; set DEBUG_SIGS=1 to see which one rejected.
+i=0
+for sig in "$SIGNATURE" "$SIGNATURE2" "$SIGNATURE3" "$SIGNATURE4"; do
+  i=$((i + 1))
+  if ! printf '%s' "$first_error_block" | grep -qF "$sig"; then
+    [[ -n "${DEBUG_SIGS:-}" ]] && echo "Signature $i didn't match" >&2
     exit 1
   fi
-else
-  #echo "Signature 1 didn't match"
-  exit 1
-fi
+done
 
-exit 1
+[[ -n "${DEBUG_SIGS:-}" ]] && echo "All signatures matched" >&2
+exit 0
