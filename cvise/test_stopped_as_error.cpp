@@ -236,6 +236,30 @@ int main() {
         static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
       },
       __step3b);
+
+  // 3C: CPO with a noexcept-specification that computes the visit.
+  stdexec::my_variant_ne<stdexec::my_tuple<>> __step3c{};
+  stdexec::my_visit(
+      [](auto &&__t) -> void {
+        static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
+      },
+      __step3c);
+
+  // 3D: namespace-scope visit_alt reached through a pointer table.
+  stdexec::my_variant_nsalt<stdexec::my_tuple<>> __step3d{};
+  stdexec::my_variant_nsalt<stdexec::my_tuple<>>::visit(
+      [](auto &&__t) -> void {
+        static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
+      },
+      __step3d);
+
+  // 3E: all three features combined.
+  stdexec::my_variant_nsalt<stdexec::my_tuple<>> __step3e{};
+  stdexec::my_visit_ns(
+      [](auto &&__t) -> void {
+        static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
+      },
+      __step3e);
 }
 
 // ---- IDENTITY PROBES -------------------------------------------------------

@@ -92,6 +92,72 @@ namespace STDEXEC {
     }
   };
 
+  // ---- STEP 3C: CPO whose NOEXCEPT-SPECIFICATION computes the visit. The
+  // real failure fires "in instantiation of exception specification for
+  // operator()" (__variant.hpp:68) -- a lazily, separately instantiated
+  // context, which fits the lazy-deserialisation theme. My step-3 versions
+  // had no noexcept at all.
+  export template <class _Ty>
+  struct my_variant_ne {
+    _Ty __value;
+    template <class _Fn, class _Self>
+    static constexpr void visit(_Fn &&__fn, _Self &&__self) {
+      static_cast<_Fn &&>(__fn)(__self.__value);
+    }
+  };
+
+  export struct my_visit_t {
+    template <class _Fn, class _Variant>
+    constexpr auto operator()(_Fn &&__fn, _Variant &&__var) const
+        noexcept(noexcept(__unref_t<_Variant>::visit(__declval<_Fn>(),
+                                                     __declval<_Variant>()))) {
+      return __unref_t<_Variant>::visit(static_cast<_Fn &&>(__fn),
+                                        static_cast<_Variant &&>(__var));
+    }
+  };
+  export inline constexpr my_visit_t my_visit{};
+
+  // ---- STEP 3D: visit_alt as a NAMESPACE-SCOPE function template rather than
+  // a member -- as stdexec has it (__var::__visit_alt). Different serialisation
+  // and lookup path in the BMI than a member template.
+  template <int _Ny, class _Result, class _Fn, class _Self>
+  constexpr auto my_visit_alt(_Fn &&__fn, _Self &&__self) -> _Result {
+    return static_cast<_Fn &&>(__fn)(__self.__value);
+  }
+
+  export template <class _Ty>
+  struct my_variant_nsalt {
+    _Ty __value;
+    template <class _Fn, class _Self>
+    static constexpr void visit(_Fn &&__fn, _Self &&__self) {
+      using __fnptr_t = void (*)(_Fn &&, _Self &&);
+      static constexpr __fnptr_t __table[] = {&my_visit_alt<0, void, _Fn, _Self>};
+      __table[0](static_cast<_Fn &&>(__fn), static_cast<_Self &&>(__self));
+    }
+  };
+
+  // ---- STEP 3E: all three features at once (namespace-scope visit_alt +
+  // pointer table + CPO with noexcept-spec), in case no single one suffices.
+  export struct my_visit_ns_t {
+    template <class _Fn, class _Variant>
+    constexpr auto operator()(_Fn &&__fn, _Variant &&__var) const
+        noexcept(noexcept(__unref_t<_Variant>::visit(__declval<_Fn>(),
+                                                     __declval<_Variant>()))) {
+      return __unref_t<_Variant>::visit(static_cast<_Fn &&>(__fn),
+                                        static_cast<_Variant &&>(__var));
+    }
+  };
+  export inline constexpr my_visit_ns_t my_visit_ns{};
+
+  inline void __seed_my_variant_more() {
+    my_variant_ne<my_tuple<>> __c{};
+    my_visit([](auto &) noexcept {}, __c);
+    my_variant_nsalt<my_tuple<>> __d{};
+    my_variant_nsalt<my_tuple<>>::visit([](auto &) noexcept {}, __d);
+    my_variant_nsalt<my_tuple<>> __e{};
+    my_visit_ns([](auto &) noexcept {}, __e);
+  }
+
   inline void __seed_my_variant() {
     my_variant_ptr<my_tuple<>> __a{};
     my_variant_ptr<my_tuple<>>::visit([](auto &) noexcept {}, __a);
