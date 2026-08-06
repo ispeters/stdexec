@@ -211,6 +211,23 @@ int main() {
         static_assert(std::remove_reference_t<decltype(__tupl)>::size == 0);
       },
       __step2_args);
+
+  // LADDER STEP 3A: hand-rolled variant WITH the function-pointer table.
+  stdexec::my_variant_ptr<stdexec::my_tuple<>> __step3a{};
+  stdexec::my_variant_ptr<stdexec::my_tuple<>>::visit(
+      [](auto &&__t) -> void {
+        static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
+      },
+      __step3a);
+
+  // LADDER STEP 3B: same, but the visitor is called directly -- no address-of,
+  // no table. If 3A fails and 3B is clean, the pointer table is the mechanism.
+  stdexec::my_variant_direct<stdexec::my_tuple<>> __step3b{};
+  stdexec::my_variant_direct<stdexec::my_tuple<>>::visit(
+      [](auto &&__t) -> void {
+        static_assert(std::remove_reference_t<decltype(__t)>::size == 0);
+      },
+      __step3b);
 }
 
 // ---- IDENTITY PROBES -------------------------------------------------------

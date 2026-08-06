@@ -57,6 +57,48 @@ namespace STDEXEC {
     static constexpr int size = sizeof...(_Ts);
   };
 
+  // LADDER STEP 3: two hand-rolled stand-ins for __variant, to isolate whether
+  // the FUNCTION-POINTER TABLE is part of the mechanism. stdexec's __visit
+  // builds `{&__var::__visit_alt<_Is, __result_t, _Fn, _Self, _Us...>...}`
+  // (__variant.hpp:384) -- taking the address of a specialisation whose
+  // instantiation is what fails. Flavour A mirrors that; flavour B calls the
+  // visitor directly with no address-of and no table. If A reproduces and B
+  // does not, the indirection is essential and belongs in the bug report.
+  export template <class _Ty>
+  struct my_variant_ptr {
+    _Ty __value;
+
+    template <int _Ny, class _Result, class _Fn, class _Self>
+    static constexpr auto visit_alt(_Fn &&__fn, _Self &&__self) -> _Result {
+      return static_cast<_Fn &&>(__fn)(__self.__value);
+    }
+
+    template <class _Fn, class _Self>
+    static constexpr void visit(_Fn &&__fn, _Self &&__self) {
+      using __fnptr_t = void (*)(_Fn &&, _Self &&);
+      static constexpr __fnptr_t __table[] = {
+          &my_variant_ptr::template visit_alt<0, void, _Fn, _Self>};
+      __table[0](static_cast<_Fn &&>(__fn), static_cast<_Self &&>(__self));
+    }
+  };
+
+  export template <class _Ty>
+  struct my_variant_direct {
+    _Ty __value;
+
+    template <class _Fn, class _Self>
+    static constexpr void visit(_Fn &&__fn, _Self &&__self) {
+      static_cast<_Fn &&>(__fn)(__self.__value);
+    }
+  };
+
+  inline void __seed_my_variant() {
+    my_variant_ptr<my_tuple<>> __a{};
+    my_variant_ptr<my_tuple<>>::visit([](auto &) noexcept {}, __a);
+    my_variant_direct<my_tuple<>> __b{};
+    my_variant_direct<my_tuple<>>::visit([](auto &) noexcept {}, __b);
+  }
+
   // Module-side seed over my_tuple, mirroring __seed's shape exactly.
   inline void __seed_my_tuple() {
     __variant<my_tuple<>> __v{__no_init};
