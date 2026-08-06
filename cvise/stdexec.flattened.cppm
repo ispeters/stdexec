@@ -3,7 +3,37 @@ module;
 #include <cstdarg>
 #include <cstdio>
 export module stdexec;
+
 #define STDEXEC_IN_MODULE_PURVIEW
+
+#include "__detail/__config.hpp"
+
+// ---- ORDERING PROBE ------------------------------------------------------
+// __variant.hpp includes ONLY __config.hpp -- it never sees __tuple.hpp. So
+// __var::__visit_alt's DEFINITION is parsed at a point in the purview where
+// the type it will later be instantiated over is not yet declared. Previously
+// my_tuple was declared at line ~56, i.e. after __let.hpp/__variant.hpp came
+// in; here it is declared FIRST, before any stdexec header.
+//
+// For ordinary headers this is irrelevant (dependent types resolve at the
+// point of instantiation), but module REACHABILITY is a different rule from
+// lookup, and Clang computing the wrong definition-context when instantiating
+// a module-defined template from an importer would explain everything seen so
+// far: the type is found (same_as passes, canonical types match) but its
+// DEFINITION is not reachable, hence "has no members" -- and explicit
+// instantiation doesn't help because emission was never the problem.
+//
+//   - Errors clear: declaration order within the purview is the mechanism,
+//     and the stdexec workaround is to ensure __tuple.hpp precedes
+//     __variant.hpp in the module interface.
+//   - No change: ordering is irrelevant; proceed to 3C-E.
+namespace STDEXEC {
+  export template <class... _Ts>
+  struct my_tuple {
+    static constexpr int size = sizeof...(_Ts);
+  };
+} // namespace STDEXEC
+
 #include "__detail/__let.hpp"
 #include "__detail/__read_env.hpp"
 #include "__just.hpp"
@@ -52,10 +82,6 @@ namespace STDEXEC {
   // __tupl_base, no __make_indices, no explicit specialisation -- and any
   // class template specialisation will do. That removes __tuple.hpp entirely
   // from the standalone repro.
-  export template <class... _Ts>
-  struct my_tuple {
-    static constexpr int size = sizeof...(_Ts);
-  };
 
   // LADDER STEP 3: two hand-rolled stand-ins for __variant, to isolate whether
   // the FUNCTION-POINTER TABLE is part of the mechanism. stdexec's __visit
