@@ -172,9 +172,29 @@ int main() {
 
   stdexec::__visit(
       [&](auto &&__tupl) {
-        return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
+        //return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
       },
       __transplant_args);
+
+  // LADDER STEP 1: is __apply needed at all, or does the failure only require
+  // the visitor to touch something on the alternative that needs the type to
+  // be COMPLETE? The decisive note last round was
+  //   "type '...__tuple<>' ... cannot be used prior to '::' because it has no
+  //    members"
+  // which is an incompleteness diagnosis, not an overload-resolution one. If
+  // this visitor -- which does nothing but read a static member -- reproduces
+  // it, then __apply_t, __impl, __cplr, __mcall1, the constrained overloads
+  // and __mk_result_sndr ALL drop out of the repro in one step.
+  //   - Fails with "has no members": completeness is the whole story.
+  //   - Builds clean: __apply's overload resolution is genuinely load-bearing
+  //     and the standalone repro has to keep an equivalent of it.
+  stdexec::__variant<stdexec::__tuple<>> __step1_args{stdexec::__no_init};
+  __step1_args.__emplace_from(stdexec::__mktuple);
+  stdexec::__visit(
+      [&](auto &&__tupl) -> void {
+        static_assert(std::remove_reference_t<decltype(__tupl)>::__size == 0);
+      },
+      __step1_args);
 }
 
 // ---- IDENTITY PROBES -------------------------------------------------------
