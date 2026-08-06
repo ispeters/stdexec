@@ -21,27 +21,38 @@
 # copied into that isolated directory, so those must be absolute paths --
 # see TEST_SRC's default in compile_module_and_test.sh.
 #
-# GUARDS ARE NOW COMPILER-ENFORCED, NOT TEXTUAL. Earlier revisions tried to
-# reject degenerate reductions by grepping the candidate module's source for
-# the shape of __apply_t::__impl. That approach failed twice and for two
-# compounding reasons: (1) `/struct __impl/` matches `struct __impls` in
-# namespace __let, which appears earlier in the file, so the awk extracted the
-# wrong struct entirely; and (2) __apply_t lives in __tuple.hpp, which is not
-# in the reduction target at all, so there was never anything to find.
+# GUARDS ARE COMPILER-ENFORCED, NOT TEXTUAL. Earlier revisions tried to
+# reject degenerate reductions by grepping the candidate module's source.
+# That approach failed repeatedly for compounding reasons (matching the
+# wrong struct by substring, targeting code that wasn't even in the
+# reduction target, etc.) and has been abandoned in favour of static_asserts
+# in the FIXED test file, which cvise cannot edit. If cvise damages the
+# machinery the bug depends on, the assert fails, becomes the first
+# `: error:` in the output, and the line-anchored signature check below
+# rejects the candidate automatically.
 #
-# All of that is now handled by static_asserts in the FIXED test file, which
-# cvise cannot edit. If cvise damages the machinery the bug depends on, one of
-# those asserts fails, becomes the first `: error:` in the output, and the
-# line-anchored signature check below rejects the candidate automatically --
-# no extra logic needed here. The compiler decides what "still meaningful"
-# means, rather than an awk script guessing at source shape.
+# THE REPRO, as of this revision: NOT stdexec's real __tuple or __let/connect
+# machinery -- those were eliminated by a step-by-step substitution ladder
+# (see git history around "ladder step" commits). What remains:
+#   - my_tuple<...>: a bare class template, one static member, nothing else.
+#     Confirmed to reproduce the bug exactly as well as __tuple<> does.
+#   - stdexec's REAL __variant.hpp (via __let.hpp -- kept unreduced because
+#     __variant.hpp relies on meta/concepts machinery it doesn't include
+#     itself, and hand-picking a minimal include set risks unrelated errors;
+#     let cvise find the minimal subset instead).
+#   - A module-side seed: __no_init construction, __emplace_from, __visit
+#     over __variant<my_tuple<>> -- confirmed necessary. A bare
+#     __variant<my_tuple<>> with no __visit does NOT reproduce it; nor does
+#     seeding a DIFFERENT specialization than the importer uses.
+#   - The importer performs the exact same sequence, over the exact same
+#     specialization, and static_asserts on a member of the visited value.
 #
-# TRIGGER: the failure is now provoked by `static_assert(sizeof(opstate2) > 0)`
-# rather than by a call to connect(). Completing that class instantiates the
-# virtual override __start_next (Clang instantiates virtual bodies at
-# class-completion time even under -fsyntax-only), which is a far shorter
-# instantiation chain -- the whole connect/__sexpr/transform_sender_t subtree
-# no longer has to survive reduction.
+# THE FAILURE: the importer's static_assert fails with the visited value's
+# type reported as having no members -- an INCOMPLETENESS diagnosis, not an
+# overload-resolution or identity one. same_as-based identity checks between
+# the module's and importer's my_tuple<> all pass; the type is found and
+# recognised, but its definition is not reachable at the point the module's
+# own __visit_alt (instantiated from the importer) needs it.
 
 set -uo pipefail
 
@@ -49,22 +60,18 @@ MODULE_SRC="stdexec.flattened.cppm"
 COMPILE="/tmp/reduce-module/compile_module_and_test.sh"
 
 # SIGNATURE is location-free and stays valid wherever the module code lives.
-SIGNATURE="no matching function for call to object of type 'stdexec::__tup::__apply_t::__impl<stdexec::__cplr>'"
+SIGNATURE="cannot be used prior to '::' because it has no members"
 
-# SIGNATURE2/3 anchor to the FIXED test file, never to the module. The primary
-# error's own file/line migrates as headers get inlined into the flattened
-# module between rounds (it was __let.hpp:292 at last check, and moves into
-# stdexec.flattened.cppm once __let.hpp is inlined) -- anchoring there would
-# silently stop matching at exactly that transition, which looks like cvise
-# mysteriously stalling rather than like a broken test.
-SIGNATURE2="/tmp/reduce-module/test_stopped_as_error.cpp:117:17: note: in instantiation of member function"
-SIGNATURE3="117 |   static_assert(sizeof(opstate2) > 0);"
+# SIGNATURE2 anchors to the FIXED test file's static_assert, never to the
+# module -- the module is exactly what's being reduced, so anchoring there
+# would break the moment cvise (or a future manual inlining step) shifts it.
+SIGNATURE2="/tmp/reduce-module/test_stopped_as_error.cpp:23:23: error: type"
 
-# SIGNATURE4 is semantic rather than positional: it pins that the class being
-# completed is the EMPTY-tuple opstate and that __start_next is what is being
-# instantiated. Immune to file moves and to cvise reformatting, and it rejects
-# any route to the diagnostic that doesn't go through the empty-tuple opstate.
-SIGNATURE4="stdexec::__tup::__tuple<>>::__start_next"
+# SIGNATURE3 pins that the incomplete type is specifically my_tuple<> --
+# semantic rather than positional, via Clang's own "(aka ...)" desugaring
+# text, which is stable across reformatting. Rejects any route to a
+# superficially similar diagnostic that isn't actually about this type.
+SIGNATURE3="'std::remove_reference_t<decltype(__t)>' (aka 'stdexec::my_tuple<>')"
 
 out=$("$COMPILE" "$MODULE_SRC" 2>&1)
 status=$?
@@ -98,10 +105,10 @@ first_error_block=$(printf '%s\n' "$out" | awk '
   n==2       { exit }
 ')
 
-# Every signature must appear in that block. Flattened to a loop now that
-# there are four of them; set DEBUG_SIGS=1 to see which one rejected.
+# Every signature must appear in that block. DEBUG_SIGS=1 to see which one
+# rejected a candidate.
 i=0
-for sig in "$SIGNATURE" "$SIGNATURE2" "$SIGNATURE3" "$SIGNATURE4"; do
+for sig in "$SIGNATURE" "$SIGNATURE2" "$SIGNATURE3"; do
   i=$((i + 1))
   if ! printf '%s' "$first_error_block" | grep -qF "$sig"; then
     [[ -n "${DEBUG_SIGS:-}" ]] && echo "Signature $i didn't match" >&2
