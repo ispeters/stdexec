@@ -33,4 +33,20 @@ namespace STDEXEC {
     __variant<__tuple<>> __v{__no_init};
     __visit([](auto &...) noexcept {}, __v);
   }
+
+  // ---- IDENTITY PROBES ---------------------------------------------------
+  // We have inferred a BMI identity split but never directly observed one.
+  // These aliases name the types AS THE MODULE SEES THEM; the importer
+  // compares them against the types it forms itself (see the bottom of
+  // test_stopped_as_error.cpp). Three probes, because the level-2/3a results
+  // suggest the split may not affect all three equally:
+  //   1. __tuple<> named directly
+  //   2. __variant<__tuple<>> named directly
+  //   3. __variant<__tuple<>> produced through the SAME alias/meta chain the
+  //      bulk path used -- 3a showed that producing it this way module-side
+  //      is not sufficient to seed the bug, but it may still be where the
+  //      split shows up.
+  export using __probe_tuple_t = __tuple<>;
+  export using __probe_variant_t = __variant<__tuple<>>;
+  export using __probe_alias_variant_t = __uniqued_variant<__decayed_tuple<>>;
 } // namespace STDEXEC

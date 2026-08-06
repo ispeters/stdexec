@@ -185,7 +185,7 @@ namespace STDEXEC
 
       STDEXEC_IMMOVABLE(__opstate_base);
 
-      constexpr virtual void __start_next() = 0;
+      constexpr void __start_next() {}
 
       template <class _Tag, class... _Args>
       constexpr void __impl(_Tag, _Args&&... __args) noexcept
@@ -339,7 +339,7 @@ namespace STDEXEC
         STDEXEC::start(__var::__get<0>(__storage_));
       };
 
-      constexpr void __start_next() final
+      constexpr void __start_next()
       {
         STDEXEC_ASSERT(__storage_.index() == 0);
         if constexpr (sizeof...(_Tuples) != 0)

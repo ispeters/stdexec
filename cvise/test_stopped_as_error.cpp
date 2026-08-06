@@ -115,4 +115,23 @@ int main() {
   // time even under -fsyntax-only -- which evaluates the __apply constraint
   // asserted above, in a context where it comes out false.
   static_assert(sizeof(opstate2) > 0);
+
+  static_assert(&opstate2::__start_next != nullptr);
 }
+
+// ---- IDENTITY PROBES -------------------------------------------------------
+// Deliberately placed AFTER main() so no line numbers shift and the
+// interestingness test's line-117 anchors stay valid.
+//
+// If any of these FAIL, a BMI identity split is directly confirmed and we know
+// exactly which entity is duplicated -- which decides whether removing
+// __tuple<>'s full explicit specialization is the right workaround.
+//
+// If they all PASS, the entities are NOT split when merely named, and the bug
+// lives in constraint normalization/satisfaction rather than type identity --
+// a different fix entirely.
+static_assert(std::same_as<stdexec::__probe_tuple_t, stdexec::__tuple<>>);
+static_assert(
+    std::same_as<stdexec::__probe_variant_t, stdexec::__variant<stdexec::__tuple<>>>);
+static_assert(std::same_as<stdexec::__probe_alias_variant_t,
+                           stdexec::__variant<stdexec::__tuple<>>>);
