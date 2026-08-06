@@ -29,6 +29,23 @@ export module stdexec;
 // ---------------------------------------------------------------------------
 
 namespace STDEXEC {
+  // ORDERING PROBE: the "no known conversion from X to X" diagnostic is a
+  // directly observed identity split, not an inferred one -- overload
+  // resolution rejected an argument against a parameter with the identical
+  // qualified spelling. That's consistent with a known shape of Clang
+  // modules bug: two independent implicit instantiations of the same class
+  // template specialization, from different TUs, failing to merge.
+  //
+  // If it's an ordering/merge bug, forcing the module's own compilation to
+  // instantiate just()'s __tuple<> FIRST -- so a canonical specialization
+  // already exists in the BMI before the importer creates its own -- may be
+  // enough to make the importer's instantiation resolve to the same entity
+  // instead of a fresh one. That would be directly usable as a source-level
+  // workaround: an internal "priming" call, not a redesign.
+  inline void __prime() {
+    STDEXEC::just();
+  }
+
   inline void __seed() {
     __variant<__tuple<>> __v{__no_init};
     __visit([](auto &...) noexcept {}, __v);
@@ -49,4 +66,15 @@ namespace STDEXEC {
   export using __probe_tuple_t = __tuple<>;
   export using __probe_variant_t = __variant<__tuple<>>;
   export using __probe_alias_variant_t = __uniqued_variant<__decayed_tuple<>>;
+
+  // Probe 4: unlike the three above, this routes __tuple<> through the SAME
+  // code path that actually fails -- just_t::operator() -> __make_sexpr ->
+  // __sexpr<__desc<just_t, __tuple<>>{}>. __sexpr's single template parameter
+  // is `auto _DescriptorFn`: a class-type NON-TYPE template parameter. Two
+  // specializations of __sexpr are the same specialization only if Clang
+  // considers the two __desc<...>{} VALUES structurally equal, which is a
+  // narrower and newer piece of machinery than plain class-template-argument
+  // matching. If the split lives there rather than in __tuple<> per se, THIS
+  // is the probe that should fail where the first three didn't.
+  export using __probe_just_result_t = decltype(STDEXEC::just());
 } // namespace STDEXEC

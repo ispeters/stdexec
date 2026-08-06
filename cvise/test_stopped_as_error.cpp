@@ -149,3 +149,10 @@ static_assert(
     std::same_as<stdexec::__probe_variant_t, stdexec::__variant<stdexec::__tuple<>>>);
 static_assert(std::same_as<stdexec::__probe_alias_variant_t,
                            stdexec::__variant<stdexec::__tuple<>>>);
+
+// Probe 4's counterpart: does the SEXPR TYPE produced by calling just() in
+// the module match the sexpr type produced by calling just() here? Unlike
+// probes 1-3, this exercises __desc<>{} as a class-type NTTP -- the actual
+// production code path -- rather than naming __tuple<> directly.
+static_assert(
+    std::same_as<stdexec::__probe_just_result_t, decltype(stdexec::just())>);
