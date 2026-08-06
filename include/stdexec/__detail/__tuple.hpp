@@ -293,11 +293,9 @@ namespace STDEXEC
 
       STDEXEC_EXEC_CHECK_DISABLE
       template <class _Fn, class _Tuple, class... _Us>
-        requires __callable<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>
+        requires requires { STDEXEC_REMOVE_REFERENCE(_Tuple)::__size; }
       STDEXEC_ATTRIBUTE(always_inline, host, device)
       constexpr auto operator()(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) const
-        noexcept(__nothrow_callable<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>)
-          -> __call_result_t<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>
       {
         STDEXEC_CONSTEXPR_LOCAL size_t __size = STDEXEC_REMOVE_REFERENCE(_Tuple)::__size;
 
