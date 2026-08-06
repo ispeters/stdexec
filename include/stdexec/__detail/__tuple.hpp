@@ -552,6 +552,7 @@ namespace STDEXEC
     operator()(_Ts&&... __ts) const STDEXEC_AUTO_RETURN(__tuple{static_cast<_Ts&&>(__ts)...})
   };
 
+  STDEXEC_MODULE_EXPORT_AUTHORING
   inline constexpr __mktuple_t __mktuple{};
 
   //

@@ -128,9 +128,34 @@ int main() {
   // __start_next -- Clang instantiates virtual bodies at class-completion
   // time even under -fsyntax-only -- which evaluates the __apply constraint
   // asserted above, in a context where it comes out false.
-  static_assert(sizeof(opstate2) > 0);
+  //static_assert(sizeof(opstate2) > 0);
 
-  static_assert(&opstate2::__start_next != nullptr);
+  //static_assert(&opstate2::__start_next != nullptr);
+
+  // TRANSPLANT: probes 1-4 (all same_as-based) confirmed every nameable
+  // __tuple<>/__variant<__tuple<>> along BOTH production mechanisms -- the
+  // sexpr-embedded Data (via just()'s CTAD) AND the __opstate::__args_
+  // storage (via __decayed_tuple/__uniqued_variant) -- is identical across
+  // the module boundary. Yet deduction still fails. So this is no longer
+  // about WHICH types are involved; it's about WHERE the deduction attempt
+  // is evaluated. This reproduces __start_next_fn's exact logic --
+  // __emplace_from then __visit then __apply -- verbatim, as ordinary code
+  // in main(), with NO virtual, NO class completion, NO opstate at all.
+  //
+  //   - If THIS fails too: class-completion/virtual timing is irrelevant --
+  //     the bug is purely "deduction against an __emplace_from-populated
+  //     variant fails," and the whole opstate/virtual apparatus in this
+  //     file can be deleted for a dramatically smaller repro.
+  //   - If THIS builds clean: class-completion timing is genuinely
+  //     load-bearing, which is a much narrower and stranger claim, but
+  //     consistent with everything else observed so far.
+  stdexec::__variant<stdexec::__tuple<>> __transplant_args{stdexec::__no_init};
+  __transplant_args.__emplace_from(stdexec::__mktuple);
+  stdexec::__visit(
+      [&](auto &__tupl) {
+        return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
+      },
+      __transplant_args);
 }
 
 // ---- IDENTITY PROBES -------------------------------------------------------
