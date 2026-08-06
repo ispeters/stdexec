@@ -212,6 +212,14 @@ int main() {
       },
       __step2_args);
 
+  stdexec::__variant<stdexec::my_tuple<int>> __step2a_args{stdexec::__no_init};
+  __step2a_args.__emplace_from([] { return stdexec::my_tuple<int>{}; });
+  stdexec::__visit(
+      [&](auto &&__tuple) -> void {
+        static_assert(std::remove_reference_t<decltype(__tuple)>::size == 1);
+      },
+      __step2a_args);
+
   // LADDER STEP 3A: hand-rolled variant WITH the function-pointer table.
   stdexec::my_variant_ptr<stdexec::my_tuple<>> __step3a{};
   stdexec::my_variant_ptr<stdexec::my_tuple<>>::visit(

@@ -99,10 +99,30 @@ namespace STDEXEC {
     my_variant_direct<my_tuple<>>::visit([](auto &) noexcept {}, __b);
   }
 
+  // ---- WORKAROUND CANDIDATE: EXPLICIT INSTANTIATION DEFINITIONS ----------
+  // The seed must name the EXACT specialization the importer uses (my_tuple<int>
+  // seeded + my_tuple<int> used => fails; my_tuple<double> seeded => clean).
+  // So a module-side IMPLICIT instantiation is what leaves the specialization
+  // declared-but-not-defined in the BMI. An explicit instantiation definition
+  // forces the definition to be emitted, and may serialize it properly.
+  //
+  // Comment these out individually to bisect. If the my_tuple ones clear the
+  // step-2 errors AND the __tuple one clears the original stdexec failure,
+  // this is a shippable workaround: a handful of explicit instantiations in
+  // the module interface, no restructuring of task_scheduler required.
+  template struct my_tuple<>;
+  template struct my_tuple<int>;
+
+  namespace __tup {
+    template struct __tuple<>;
+  } // namespace __tup
+
   // Module-side seed over my_tuple, mirroring __seed's shape exactly.
   inline void __seed_my_tuple() {
     __variant<my_tuple<>> __v{__no_init};
     __visit([](auto &...) noexcept {}, __v);
+    __variant<my_tuple<int>> __w{__no_init};
+    __visit([](auto &...) noexcept {}, __w);
   }
 
   inline void __seed() {
