@@ -1,0 +1,119 @@
+clang++: warning: argument unused during compilation: '-c' [-Wunused-command-line-argument]
+/tmp/reduce-module/test_stopped_as_error.cpp:175:16: error: no matching function for call to object of
+      type 'const __tup::__apply_t'
+  175 |         return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
+      |                ^~~~~~~~~~~~~~~~
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:105:14: note: in instantiation of
+      function template specialization 'main()::(lambda)::operator()<struct stdexec::__tup::__tuple<> &>'
+      requested here
+  105 |       return static_cast<_Fn &&>(__fn)(static_cast<_Us &&>(__us)...,
+      |              ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:384:19: note: in instantiation of
+      function template specialization 'stdexec::__var::__visit_alt<0UL,
+      stdexec::__sexpr<stdexec::__desc<stdexec::just_t, stdexec::__tup::__tuple<int>>{}>, (lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+  384 |           &__var::__visit_alt<_Is, __result_t, _Fn, _Self, _Us...>...};
+      |                   ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:69:22: note: in instantiation of
+      function template specialization 'stdexec::__var::__variant<nullptr,
+      stdexec::__tup::__tuple<>>::__visit<(lambda at /tmp/reduce-module/test_stopped_as_error.cpp:174:7),
+      stdexec::__variant<stdexec::__tup::__tuple<>> &>' requested here
+   69 |       noexcept(__var.__visit(__declval<_Fn>(), __declval<_Variant>(), __declval<_As>()...)))
+      |                      ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:68:20: note: in instantiation of
+      exception specification for 'operator()<(lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+   68 |     constexpr auto operator()(_Fn &&__fn, _Variant &&__var, _As &&...__as) const noexcept(  //
+      |                    ^
+/tmp/reduce-module/test_stopped_as_error.cpp:173:19: note: in instantiation of function template
+      specialization 'stdexec::__visit_t::operator()<(lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+  173 |   stdexec::__visit(
+      |                   ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__tuple.hpp:268:22: note: candidate function
+      template not viable: no known conversion from 'struct stdexec::__tup::__tuple<>'
+      (aka 'stdexec::__tup::__tuple<>') to '__tuple<>' for 2nd argument
+  268 |       constexpr auto operator()(_Fn&& __fn, __tuple<>&&, _Us&&... __us) const
+      |                      ^                      ~~~~~~~~~~~
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__tuple.hpp:278:22: note: candidate function
+      template not viable: no known conversion from 'struct stdexec::__tup::__tuple<>'
+      (aka 'stdexec::__tup::__tuple<>') to '__tuple<> &' for 2nd argument
+  278 |       constexpr auto operator()(_Fn&& __fn, __tuple<>&, _Us&&... __us) const
+      |                      ^                      ~~~~~~~~~~
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__tuple.hpp:288:22: note: candidate function
+      template not viable: no known conversion from 'struct stdexec::__tup::__tuple<>'
+      (aka 'stdexec::__tup::__tuple<>') to 'const __tuple<>' for 2nd argument
+  288 |       constexpr auto operator()(_Fn&& __fn, const __tuple<>&, _Us&&... __us) const
+      |                      ^                      ~~~~~~~~~~~~~~~~
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__tuple.hpp:298:22: note: candidate template
+      ignored: constraints not satisfied [with _Fn = const stdexec::__let::(lambda at
+      /Users/ianpetersen/git/stdexec/include/stdexec/__detail/__let.hpp:277:7) &, _Tuple = struct
+      stdexec::__tup::__tuple<> &, _Us = <fn_t &>]
+  298 |       constexpr auto operator()(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) const
+      |                      ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__tuple.hpp:296:29: note: because
+      'stdexec::__unref_t<_Tuple>::__size' would be invalid: type 'stdexec::__unref_t<struct
+      stdexec::__tup::__tuple<> &>' (aka 'stdexec::__tup::__tuple<>') cannot be used prior to '::' because
+      it has no members
+  296 |         requires requires { STDEXEC_REMOVE_REFERENCE(_Tuple)::__size; }
+      |                             ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__config.hpp:544:41: note: expanded from macro
+      'STDEXEC_REMOVE_REFERENCE'
+  544 | #  define STDEXEC_REMOVE_REFERENCE(...) STDEXEC::__unref_t<__VA_ARGS__>
+      |                                         ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__config.hpp:221:19: note: expanded from macro
+      'STDEXEC'
+  221 | #  define STDEXEC stdexec
+      |                   ^
+In module 'stdexec' imported from /tmp/reduce-module/test_stopped_as_error.cpp:1:
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:384:12: error: address of overloaded
+      function '__visit_alt' does not match required type
+      'stdexec::__sexpr<stdexec::__desc<stdexec::just_t, stdexec::__tup::__tuple<int>>{}> ((lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7) &&,
+      stdexec::__variant<stdexec::__tup::__tuple<>> &)'
+  384 |           &__var::__visit_alt<_Is, __result_t, _Fn, _Self, _Us...>...};
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:69:22: note: in instantiation of
+      function template specialization 'stdexec::__var::__variant<nullptr,
+      stdexec::__tup::__tuple<>>::__visit<(lambda at /tmp/reduce-module/test_stopped_as_error.cpp:174:7),
+      stdexec::__variant<stdexec::__tup::__tuple<>> &>' requested here
+   69 |       noexcept(__var.__visit(__declval<_Fn>(), __declval<_Variant>(), __declval<_As>()...)))
+      |                      ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:68:20: note: in instantiation of
+      exception specification for 'operator()<(lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+   68 |     constexpr auto operator()(_Fn &&__fn, _Variant &&__var, _As &&...__as) const noexcept(  //
+      |                    ^
+/tmp/reduce-module/test_stopped_as_error.cpp:173:19: note: in instantiation of function template
+      specialization 'stdexec::__visit_t::operator()<(lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+  173 |   stdexec::__visit(
+      |                   ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:103:27: note: candidate template
+      ignored: substitution failure [with _Ny = 0, _Result = __result_t, _Fn = (lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), _Self =
+      stdexec::__variant<stdexec::__tup::__tuple<>> &, _Us = <>]
+  103 |     static constexpr auto __visit_alt(_Fn &&__fn, _Self &&__self, _Us &&...__us) -> _Result
+      |                           ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:72:20: error: no matching member
+      function for call to '__visit'
+   72 |       return __var.__visit(static_cast<_Fn &&>(__fn),
+      |              ~~~~~~^~~~~~~
+/tmp/reduce-module/test_stopped_as_error.cpp:173:19: note: in instantiation of function template
+      specialization 'stdexec::__visit_t::operator()<(lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), stdexec::__variant<stdexec::__tup::__tuple<>>
+      &>' requested here
+  173 |   stdexec::__visit(
+      |                   ^
+/Users/ianpetersen/git/stdexec/include/stdexec/__detail/__variant.hpp:377:29: note: candidate template
+      ignored: substitution failure [with _Fn = (lambda at
+      /tmp/reduce-module/test_stopped_as_error.cpp:174:7), _Self =
+      stdexec::__variant<stdexec::__tup::__tuple<>> &, _Us = <>]
+  377 |       static constexpr auto __visit(_Fn &&__fn, _Self &&__self, _Us &&...__us)
+      |                             ^
+3 errors generated.

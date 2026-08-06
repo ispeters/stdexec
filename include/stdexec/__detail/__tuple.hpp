@@ -90,12 +90,6 @@ namespace STDEXEC
     struct __tuple : __tup::__tupl_base<__make_indices<sizeof...(_Ts)>, _Ts...>
     {};
 
-    template <>
-    struct __tuple<>
-    {
-      static constexpr size_t __size = 0;
-    };
-
     template <class _Tp0>
     struct __tuple<_Tp0>
     {
@@ -293,9 +287,11 @@ namespace STDEXEC
 
       STDEXEC_EXEC_CHECK_DISABLE
       template <class _Fn, class _Tuple, class... _Us>
-        requires requires { STDEXEC_REMOVE_REFERENCE(_Tuple)::__size; }
+        requires __callable<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>
       STDEXEC_ATTRIBUTE(always_inline, host, device)
       constexpr auto operator()(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) const
+        noexcept(__nothrow_callable<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>)
+          -> __call_result_t<__impl_t<_Tuple>, _Fn, _Tuple, _Us...>
       {
         STDEXEC_CONSTEXPR_LOCAL size_t __size = STDEXEC_REMOVE_REFERENCE(_Tuple)::__size;
 
