@@ -46,6 +46,23 @@ namespace STDEXEC {
     STDEXEC::just();
   }
 
+  // LADDER STEP 2: a hand-rolled stand-in for __tuple, declared in the module
+  // so the seed below can instantiate over it. If the failure reproduces with
+  // this in place of __tuple<>, then __tuple is not special -- no __box, no
+  // __tupl_base, no __make_indices, no explicit specialisation -- and any
+  // class template specialisation will do. That removes __tuple.hpp entirely
+  // from the standalone repro.
+  export template <class... _Ts>
+  struct my_tuple {
+    static constexpr int size = sizeof...(_Ts);
+  };
+
+  // Module-side seed over my_tuple, mirroring __seed's shape exactly.
+  inline void __seed_my_tuple() {
+    __variant<my_tuple<>> __v{__no_init};
+    __visit([](auto &...) noexcept {}, __v);
+  }
+
   inline void __seed() {
     __variant<__tuple<>> __v{__no_init};
     __visit([](auto &...) noexcept {}, __v);

@@ -192,9 +192,25 @@ int main() {
   __step1_args.__emplace_from(stdexec::__mktuple);
   stdexec::__visit(
       [&](auto &&__tupl) -> void {
-        static_assert(std::remove_reference_t<decltype(__tupl)>::__size == 0);
+        //static_assert(std::remove_reference_t<decltype(__tupl)>::__size == 0);
       },
       __step1_args);
+
+  // LADDER STEP 2: identical shape, but the alternative is the hand-rolled
+  // my_tuple from the module rather than stdexec's __tuple. Note __mktuple is
+  // replaced by a plain lambda returning the alternative -- __emplace_from
+  // only needs something callable that produces it.
+  //   - Fails the same way: __tuple is not special, and __tuple.hpp (plus
+  //     __box/__tupl_base/__make_indices) leaves the repro entirely.
+  //   - Builds clean: something about __tuple specifically matters, and it
+  //     has to stay -- which would itself be a surprising and useful result.
+  stdexec::__variant<stdexec::my_tuple<>> __step2_args{stdexec::__no_init};
+  __step2_args.__emplace_from([] { return stdexec::my_tuple<>{}; });
+  stdexec::__visit(
+      [&](auto &&__tupl) -> void {
+        static_assert(std::remove_reference_t<decltype(__tupl)>::size == 0);
+      },
+      __step2_args);
 }
 
 // ---- IDENTITY PROBES -------------------------------------------------------
