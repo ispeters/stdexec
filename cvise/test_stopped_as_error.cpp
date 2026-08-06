@@ -152,7 +152,26 @@ int main() {
   stdexec::__variant<stdexec::__tuple<>> __transplant_args{stdexec::__no_init};
   __transplant_args.__emplace_from(stdexec::__mktuple);
   stdexec::__visit(
-      [&](auto &__tupl) {
+      [&](auto &&__tupl) {
+        return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
+      },
+      std::move(__transplant_args));
+
+  // FURTHER CUT: does __variant/__emplace_from/__visit matter at all, or
+  // does the failure survive with NONE of them? __mktuple() alone produces
+  // the exact same CTAD-deduced __tuple<> that __emplace_from constructed
+  // via construct_at above -- this calls __apply on it directly, with no
+  // variant machinery in between at all.
+  //   - Fails: the repro is now just __apply(fn, __mktuple(), args...) --
+  //     essentially minimal, no library machinery beyond __apply/__tuple.
+  //   - Builds clean: __variant's construct_at/index-selection machinery
+  //     is itself part of the mechanism, not incidental plumbing.
+  stdexec::__apply(stdexec::__let::__mk_result_sndr, stdexec::__mktuple(), lambda);
+  auto lvalueTuple = stdexec::__mktuple();
+  stdexec::__apply(stdexec::__let::__mk_result_sndr, lvalueTuple, lambda);
+
+  stdexec::__visit(
+      [&](auto &&__tupl) {
         return stdexec::__apply(stdexec::__let::__mk_result_sndr, __tupl, lambda);
       },
       __transplant_args);
