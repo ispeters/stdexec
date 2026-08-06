@@ -28,8 +28,22 @@ struct rcvr {
   constexpr void set_value(auto &&...) && noexcept {}
 };
 
+// LAMBDA ABLATION: this replaces the importer-side lambda that used to be
+// declared at the top of main(). The failing constraint reports
+//   _Us = <(lambda at test_stopped_as_error.cpp:32:17) &>
+// i.e. a closure type declared in the IMPORTER, fed into a template body
+// deserialized from the module's BMI. Clang's lambda mangling/identity under
+// module imports is already known-shaky here (cf. the STDEXEC_SEXPR_DESCRIPTOR
+// collisions). A named class has a proper linkage name and none of that
+// machinery, so if the failure clears, closure-type identity across the BMI
+// boundary is the mechanism. NB: must be at namespace scope -- a local class
+// cannot have the member template that `operator()(auto&...)` implies.
+struct fn_t {
+  constexpr auto operator()(auto &...) const noexcept { return stdexec::just(2); }
+};
+
 int main() {
-  auto lambda = [](auto &...) noexcept { return stdexec::just(2); };
+  fn_t lambda;
 
   // Pin both child senders' descriptor shape. The suspected identity split
   // puts __tuple<> in two distinct positions: as the _Tuples... element of
