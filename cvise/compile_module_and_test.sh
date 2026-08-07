@@ -62,6 +62,6 @@ fi
 # Step 2: compile the fixed, minimized test file against this candidate.
 "$CXX" "${COMMON_FLAGS[@]}" \
   -fmodule-file=std="$STD_PCM" \
-  -fmodule-file=stdexec="$candidate_pcm" \
+  -fmodule-file=foo="$candidate_pcm" \
   -fsyntax-only -c "$test_src" 2>&1
 exit $?
