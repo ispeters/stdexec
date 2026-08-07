@@ -25,7 +25,7 @@ void __visit_alt(_Self __self) {
 } // namespace __var
 
 export template <class... _Ts> struct __variant {
-  template <std::size_t _Ny> using __at_t = _Ts...[_Ny];
+  template <std::size_t _Ny> using __at_t = __type_pack_element<_Ny, _Ts...>; //_Ts...[_Ny];
 
   __variant(int);
 
