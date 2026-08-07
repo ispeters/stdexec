@@ -38,13 +38,11 @@ namespace bar
   struct module_fn
   {
     void operator()(box<>) {}
-    void operator()(box<int>) {}
   };
 
   void seed()
   {
     visit<module_fn, broken_holder<box<>>>({});
-    visit<module_fn, broken_holder<box<int>>>({});
     visit<module_fn, working_holder<box<>>>({});
   }
 }  // namespace bar
@@ -52,7 +50,11 @@ namespace bar
 struct importer_fn
 {
   void operator()(bar::box<>) {}
-  void operator()(bar::box<int>) {}
+};
+
+struct importer_fn2
+{
+  void operator()(bar::box<double>) {}
 };
 
 int main()
@@ -60,6 +62,6 @@ int main()
   bar::visit<bar::module_fn, bar::working_holder<bar::box<>>>({});
   bar::visit<bar::module_fn, bar::broken_holder<bar::box<>>>({});
   bar::visit<importer_fn, bar::working_holder<bar::box<>>>({});
-  bar::visit<importer_fn, bar::broken_holder<bar::box<int>>>({});
+  bar::visit<importer_fn2, bar::broken_holder<bar::box<double>>>({});
   bar::visit<importer_fn, bar::broken_holder<bar::box<>>>({});
 }

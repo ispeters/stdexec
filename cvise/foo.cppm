@@ -37,7 +37,6 @@ export namespace bar
   struct module_fn
   {
     void operator()(box<>) {}
-    void operator()(box<int>) {}
   };
 }  // namespace bar
 
@@ -45,11 +44,9 @@ namespace bar
 {
   void seed()
   {
-    // Form at<N> in the module purview for *every* holder/box combination the
-    // importer instantiates, so that "was this specialization seeded?" is not a
-    // confounding variable when comparing the box<> and box<int> cases.
+    // Form at<0> in the module purview.  Note that broken_holder<box<double>>
+    // is deliberately *not* named here; see main.cpp.
     visit<module_fn, broken_holder<box<>>>({});
-    visit<module_fn, broken_holder<box<int>>>({});
     visit<module_fn, working_holder<box<>>>({});
   }
 }  // namespace bar
