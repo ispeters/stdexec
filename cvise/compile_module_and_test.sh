@@ -2,36 +2,29 @@
 
 set -uo pipefail
 
-CXX="${CXX:-which clang++}"
+CXX="${CXX:-clang++}"
 
 echo "Testing with $("$CXX" --version)"
 
-module_src="${1:-foo.cppm}"
-test_src="${TEST_SRC:-./main.cpp}"
-candidate_pcm="./foo.pcm"
+FLAGS=(-std=c++26 -Wno-unused-command-line-argument)
 
-COMMON_FLAGS=(
-  -std=c++26
-  -Wno-unused-command-line-argument
-)
+rm -f ./foo.pcm
 
-rm -f "$candidate_pcm"
+# Step 1: precompile the module interface.
+"$CXX" "${FLAGS[@]}" --precompile foo.cppm -o ./foo.pcm || exit $?
 
-# Step 1: precompile the candidate module against the fixed std.pcm.
-precompile_out=$("$CXX" "${COMMON_FLAGS[@]}" \
-  --precompile "$module_src" -o "$candidate_pcm" 2>&1)
-precompile_status=$?
+# Step 2: compile the importer against it.  One diagnostic is expected, on the
+# last line of main.cpp; every other line in main() should compile clean.
+echo
+echo "=== modules build (one error expected) ==="
+"$CXX" "${FLAGS[@]}" -fmodule-file=foo=./foo.pcm -fsyntax-only main.cpp
+modules_status=$?
 
-if [[ $precompile_status -ne 0 ]]; then
-  # Module itself doesn't even build -- report distinctly so the
-  # interestingness test can tell this apart from "builds fine, no bug".
-  echo "PRECOMPILE_FAILED"
-  echo "$precompile_out"
-  exit 2
-fi
+# Step 3: the same code with no module syntax at all.
+echo
+echo "=== non-modular control (no diagnostics expected) ==="
+"$CXX" "${FLAGS[@]}" -fsyntax-only no_modules.cpp
+control_status=$?
 
-# Step 2: compile the fixed, minimized test file against this candidate.
-"$CXX" "${COMMON_FLAGS[@]}" \
-  -fmodule-file=foo="$candidate_pcm" \
-  -fsyntax-only "$test_src" 2>&1
-exit $?
+echo
+echo "modules build exited $modules_status; non-modular control exited $control_status"

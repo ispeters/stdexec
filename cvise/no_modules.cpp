@@ -1,5 +1,8 @@
-export module foo;
-export namespace bar
+// Control: exactly the code in foo.cppm + main.cpp, with all module syntax
+// removed and both translation units concatenated.  Expect no diagnostics --
+// this is what establishes that the defect is modules-specific rather than a
+// general problem with C++26 pack indexing.
+namespace bar
 {
 
   template <class... Ts>
@@ -9,7 +12,6 @@ export namespace bar
   template <class... Ts>
   struct broken_holder
   {
-    // using C++26 type pack indexing breaks
     template <unsigned N>
     using at = Ts...[N];
   };
@@ -17,7 +19,6 @@ export namespace bar
   template <class... Ts>
   struct working_holder
   {
-    // but using __type_pack_element works
     template <unsigned N>
     using at = __type_pack_element<N, Ts...>;
   };
@@ -39,17 +40,26 @@ export namespace bar
     void operator()(box<>) {}
     void operator()(box<int>) {}
   };
-}  // namespace bar
 
-namespace bar
-{
   void seed()
   {
-    // Form at<N> in the module purview for *every* holder/box combination the
-    // importer instantiates, so that "was this specialization seeded?" is not a
-    // confounding variable when comparing the box<> and box<int> cases.
     visit<module_fn, broken_holder<box<>>>({});
     visit<module_fn, broken_holder<box<int>>>({});
     visit<module_fn, working_holder<box<>>>({});
   }
 }  // namespace bar
+
+struct importer_fn
+{
+  void operator()(bar::box<>) {}
+  void operator()(bar::box<int>) {}
+};
+
+int main()
+{
+  bar::visit<bar::module_fn, bar::working_holder<bar::box<>>>({});
+  bar::visit<bar::module_fn, bar::broken_holder<bar::box<>>>({});
+  bar::visit<importer_fn, bar::working_holder<bar::box<>>>({});
+  bar::visit<importer_fn, bar::broken_holder<bar::box<int>>>({});
+  bar::visit<importer_fn, bar::broken_holder<bar::box<>>>({});
+}
