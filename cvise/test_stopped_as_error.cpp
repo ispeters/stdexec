@@ -4,15 +4,19 @@ import stdexec;
 // this passes. Same type, same TU, same specialization as below.
 static_assert(stdexec::my_tuple<>::size == 0);
 
+using fn1 = stdexec::fn;
+
+struct fn2 : stdexec::fn {};
+
 int main() {
   stdexec::__variant<stdexec::my_tuple<>> __args{stdexec::__no_init};
 
-  // ...but reached through __visit_alt -- a template defined in the module,
-  // instantiated here -- the same my_tuple<> is INCOMPLETE. The module's
-  // __seed() having already instantiated __visit_alt over this exact
-  // specialization is required; seeding a different one, or not seeding at
-  // all, both compile cleanly.
-  __args.__visit(
-      [](auto __t) -> void { static_assert(decltype(__t)::size == 0); },
-      __args);
+  // visiting with a visitor defined in the module works
+  __args.__visit(stdexec::fn{}, __args);
+
+  // visiting with an importer-scoped alias of the module-scoped visitor works
+  __args.__visit(fn1{}, __args);
+
+  // defining a type in the importer and visiting with it breaks
+  __args.__visit(fn2{}, __args);
 }
