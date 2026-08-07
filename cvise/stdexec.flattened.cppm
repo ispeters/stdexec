@@ -1,5 +1,4 @@
 module;
-#include <cstdarg>
 #include <cstdio>
 export module stdexec;
 #define STDEXEC_IN_MODULE_PURVIEW
@@ -11,8 +10,7 @@ import std;
 #define STDEXEC_EDG() 0
 #define STDEXEC_GCC() 0
 #define STDEXEC_MSVC() 0
-#define STDEXEC_HOST_DEVICE_DEDUCTION_GUIDE
-#define STDEXEC stdexec
+#define STDEXEC
 #define STDEXEC_ATTRIBUTE(...)
 #define STDEXEC_PRAGMA_PUSH()
 #define STDEXEC_PRAGMA_POP()
@@ -28,23 +26,20 @@ import std;
 #define STDEXEC_IS_NOTHROW_ASSIGNABLE(...)                                     \
   std::is_nothrow_assignable_v<__VA_ARGS__>
 #define STDEXEC_IS_ASSIGNABLE(...) std::is_assignable_v<__VA_ARGS__>
-#define STDEXEC_REMOVE_REFERENCE(...) std::remove_reference_t<__VA_ARGS__>
 template <class, class> bool __same_as_v;
 template <class _Ap> constexpr bool __same_as_v<_Ap, _Ap> = true;
-#define STDEXEC_UNREACHABLE std::terminate
-#define STDEXEC_IMMOVABLE(_XP)
 #define STDEXEC_NO_STDCPP_PACK_INDEXING() 0
-#define STDEXEC_NO_STDCPP_RTTI() 1
 #define STDEXEC_NO_STDCPP_TYPEID() 0
 #define STDEXEC_NO_STDCPP_CONCEPTS_HEADER() 1
-#define STDEXEC_IF_CONSTEVAL if (std::is_constant_evaluated)
 #define STDEXEC_MODULE_EXPORT_META
-#define STDEXEC_MODULE_EXPORT_AUTHORING export
+#define STDEXEC_MODULE_EXPORT_AUTHORING
 namespace stdexec {
 export template <class...> struct my_tuple {};
 } // namespace stdexec
-#include "__utility.hpp"
+#include "__meta.hpp"
 namespace stdexec {
+export int __no_init;
+template <class...> using __call_result_t = decltype(0);
 struct __visit_t {
   template <class _Fn, class _Variant>
   void operator()(_Fn, _Variant __var) noexcept(
@@ -66,11 +61,10 @@ template <auto, class...> class __variant;
 template <size_t... _Is, __indices<_Is...> _Idx, class... _Ts>
 struct __variant<_Idx, _Ts...> {
   template <size_t _Ny> using __at_t = __m_at_c<_Ny, _Ts...>;
-  __variant(__no_init_t);
+  __variant(int);
   template <class _Fn> auto __emplace_from(_Fn) -> _Fn;
   template <class _Fn, class _Self> auto __visit(_Fn, _Self) {
-    using __result_t = __call_result_t<_Fn, __copy_cvref_t<_Self, __at_t<0>>>;
-    __visit_alt<0, __result_t, _Fn, _Self>;
+    __visit_alt<0, __call_result_t<>, _Fn, _Self>;
   }
 };
 template <class... _Ts>
