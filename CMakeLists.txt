@@ -241,6 +241,9 @@ if(STDEXEC_BUILD_MODULES)
            BASE_DIRS
            modules
            FILES
+           modules/stdexec.level_0.cppm
+           modules/stdexec.level_1.cppm
+           modules/stdexec.level_2.cppm
            modules/stdexec.cppm)
 
   set_target_properties(stdexec PROPERTIES CXX_MODULE_STD ON)
