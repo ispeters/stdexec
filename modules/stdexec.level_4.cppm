@@ -20,15 +20,8 @@ import stdexec.level_3;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
-#include <exec/any_sender_of.hpp>
-#include <exec/async_scope.hpp>
 #include <exec/detail/numa.hpp>
-#include <exec/repeat_n.hpp>
-#include <exec/repeat_until.hpp>
-#include <exec/sequence/ignore_all_values.hpp>
 #include <exec/sequence/iterate.hpp>
-#include <exec/sequence/merge_each.hpp>
-#include <exec/sequence/transform_each.hpp>
 #include <stdexec/__detail/__any_allocator.hpp>
 #include <stdexec/__detail/__counting_scopes.hpp>
 #include <stdexec/__detail/__spawn.hpp>

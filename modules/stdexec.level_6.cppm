@@ -22,9 +22,6 @@ import stdexec.level_5;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
-#include <exec/on_coro_disposition.hpp>
-#include <exec/task.hpp>
-#include <exec/thread_pool_base.hpp>
 #include <stdexec/__detail/__parallel_scheduler_default_impl.hpp>
 
 #pragma clang diagnostic pop

@@ -15,14 +15,9 @@ export module stdexec.level_0;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
-#include <exec/asio/as_default_on.hpp>
 #include <exec/completion_signatures.hpp>
 #include <exec/detail/atomic_intrusive_queue.hpp>
 #include <exec/detail/xorshift.hpp>
-#include <exec/linux/detail/memory_mapped_region.hpp>
-#include <exec/linux/detail/safe_file_descriptor.hpp>
-#include <exec/linux/memory_mapped_region.hpp>
-#include <exec/linux/safe_file_descriptor.hpp>
 #include <exec/sequence.hpp>
 #include <stdexec/__detail/__awaitable.hpp>
 #include <stdexec/__detail/__config.hpp>

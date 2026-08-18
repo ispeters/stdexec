@@ -60,7 +60,6 @@ import stdexec.level_1;
 #include <stdexec/__detail/__stop_token.hpp>
 #include <stdexec/__detail/__stopped_as_error.hpp>
 #include <stdexec/__detail/__stopped_as_optional.hpp>
-#include <stdexec/__detail/__submit.hpp>
 #include <stdexec/__detail/__sync_wait.hpp>
 #include <stdexec/__detail/__then.hpp>
 #include <stdexec/__detail/__transfer_just.hpp>

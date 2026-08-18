@@ -21,10 +21,6 @@ import stdexec.level_4;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
-#include <exec/at_coroutine_exit.hpp>
-#include <exec/function.hpp>
-#include <exec/sequence/any_sequence_of.hpp>
-#include <exec/sequence/merge.hpp>
 #include <exec/static_thread_pool.hpp>
 #include <stdexec/__detail/__parallel_scheduler_backend.hpp>
 #include <stdexec/__detail/__task_scheduler.hpp>

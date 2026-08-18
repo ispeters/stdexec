@@ -23,7 +23,6 @@ import stdexec.level_6;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
-#include <exec/asio/asio_thread_pool.hpp>
 #include <stdexec/__detail/__parallel_scheduler_default_impl_entry.hpp>
 #include <stdexec/__detail/__parallel_scheduler_replacement_api.hpp>
 
