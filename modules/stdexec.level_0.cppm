@@ -15,16 +15,19 @@ export module stdexec.level_0;
 
 #define STDEXEC_IN_MODULE_PURVIEW
 
+#include <exec/asio/as_default_on.hpp>
+#include <exec/completion_signatures.hpp>
+#include <exec/detail/atomic_intrusive_queue.hpp>
+#include <exec/detail/xorshift.hpp>
+#include <exec/linux/detail/memory_mapped_region.hpp>
+#include <exec/linux/detail/safe_file_descriptor.hpp>
+#include <exec/linux/memory_mapped_region.hpp>
+#include <exec/linux/safe_file_descriptor.hpp>
+#include <exec/sequence.hpp>
 #include <stdexec/__detail/__awaitable.hpp>
-#include <stdexec/__detail/__completion_behavior.hpp>
 #include <stdexec/__detail/__config.hpp>
-#include <stdexec/__detail/__diagnostics.hpp>
-#include <stdexec/__detail/__domain.hpp>
-#include <stdexec/__detail/__execution_fwd.hpp>
-#include <stdexec/__detail/__sender_concepts.hpp>
 #include <stdexec/__detail/__spin_loop_pause.hpp>
 #include <stdexec/__detail/__tag_invoke.hpp>
-#include <stdexec/__detail/__transform_sender.hpp>
 #include <stdexec/__detail/__tuple.hpp>
 #include <stdexec/__detail/__typeinfo.hpp>
 #include <stdexec/coroutine.hpp>
